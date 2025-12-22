@@ -5,6 +5,7 @@ node_modules/
 prisma/.env
 pnpm-debug.log*
 .npmrc
+.pnpm-store/
 .vite/
 apps/web/dist/
 apps/api/dist/
