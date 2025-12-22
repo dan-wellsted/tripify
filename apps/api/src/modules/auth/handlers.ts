@@ -13,6 +13,19 @@ function sanitizeUser(user: { id: string; email: string; name: string | null }) 
   };
 }
 
+function saveSession(req: Request) {
+  return new Promise<void>((resolve, reject) => {
+    req.session.save((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
+}
+
 export async function registerHandler(req: Request, res: Response) {
   const result = registerSchema.safeParse(req.body);
   if (!result.success) {
@@ -32,6 +45,7 @@ export async function registerHandler(req: Request, res: Response) {
     });
 
     req.session.userId = user.id;
+    await saveSession(req);
 
     return res.status(201).json({
       user: sanitizeUser(user),
@@ -69,6 +83,7 @@ export async function loginHandler(req: Request, res: Response) {
   }
 
   req.session.userId = user.id;
+  await saveSession(req);
 
   return res.status(200).json({
     user: sanitizeUser(user),

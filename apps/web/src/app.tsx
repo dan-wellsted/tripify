@@ -12,6 +12,8 @@ import { Link as RouterLink, Navigate, Route, Routes } from "react-router-dom";
 import LoginPage from "./features/auth/LoginPage";
 import RegisterPage from "./features/auth/RegisterPage";
 import { useAuth } from "./features/auth/AuthProvider";
+import TripsPage from "./features/trips/TripsPage";
+import TripDetailPage from "./features/trips/TripDetailPage";
 
 export default function App() {
   const { user, isLoading, logout, error } = useAuth();
@@ -80,10 +82,10 @@ export default function App() {
                 ready.
               </Text>
               <Stack direction={{ base: "column", sm: "row" }} spacing={4}>
-                <Button colorScheme="blue" size="lg">
+                <Button colorScheme="blue" size="lg" as={RouterLink} to="/trips">
                   Create a trip
                 </Button>
-                <Button variant="outline" size="lg">
+                <Button variant="outline" size="lg" as={RouterLink} to="/trips">
                   Browse trips
                 </Button>
               </Stack>
@@ -97,6 +99,14 @@ export default function App() {
               ) : null}
             </Stack>
           }
+        />
+        <Route
+          path="/trips"
+          element={user ? <TripsPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/trips/:tripId"
+          element={user ? <TripDetailPage /> : <Navigate to="/login" replace />}
         />
         <Route
           path="/login"

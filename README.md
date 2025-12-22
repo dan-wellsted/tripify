@@ -33,3 +33,10 @@ Think Wanderlog-style planning: trips, itineraries, places, activities.
 - Work from docs/tickets
 - Keep diffs small
 - Update tests and schemas when behavior changes
+
+## Local dev checklist
+- `pnpm install`
+- Create `prisma/.env` from `prisma/.env.example`
+- `pnpm --filter api prisma migrate dev`
+- `pnpm --filter api dev`
+- `pnpm --filter web dev`

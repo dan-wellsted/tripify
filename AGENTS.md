@@ -25,3 +25,7 @@ Trip / experience planning web app (mobile later).
 - Tests updated
 - Typecheck passes
 - Lint passes
+
+## Testing notes
+- API tests require Postgres and `DATABASE_URL` set (see `prisma/.env.example`).
+- Run API migrations before tests: `pnpm --filter api prisma migrate dev`.

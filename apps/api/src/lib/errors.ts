@@ -4,6 +4,7 @@ export type ErrorCode =
   | "CONFLICT"
   | "INTERNAL_ERROR"
   | "INVALID_CREDENTIALS"
+  | "NOT_FOUND"
   | "RATE_LIMITED"
   | "UNAUTHORIZED"
   | "VALIDATION_ERROR";
