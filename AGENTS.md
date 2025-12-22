@@ -29,6 +29,7 @@ Trip / experience planning web app (mobile later).
 ## Workflow
 - Create a new git branch at the start of each ticket.
 - Push changes at the end of each ticket.
+- Add ADRs for noteworthy architecture or data model decisions.
 
 ## Testing notes
 - API tests require Postgres and `DATABASE_URL` set (see `prisma/.env.example`).
