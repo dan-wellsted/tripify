@@ -27,6 +27,9 @@ import {
   deleteTripDayActivity,
   deleteTripDayCity,
   deleteTripDayPlace,
+  reorderTripDayActivities,
+  reorderTripDayCities,
+  reorderTripDayPlaces,
   listTripDayActivities,
   listTripDayCities,
   listTripDayPlaces,
@@ -68,9 +71,40 @@ export default function ItineraryPage() {
   const [isLoadingPlaces, setIsLoadingPlaces] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const sortedDays = useMemo(
-    () => [...days].sort((a, b) => a.position - b.position),
+    () =>
+      [...days].sort((a, b) => {
+        const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
+        if (dateDiff !== 0) {
+          return dateDiff;
+        }
+        return a.position - b.position;
+      }),
     [days]
   );
+
+  const reorderById = <T extends { id: string; position: number }>(
+    items: T[],
+    sourceId: string,
+    targetId: string
+  ) => {
+    const sourceIndex = items.findIndex((item) => item.id === sourceId);
+    const targetIndex = items.findIndex((item) => item.id === targetId);
+    if (sourceIndex === -1 || targetIndex === -1) {
+      return items;
+    }
+
+    const next = [...items];
+    const [moved] = next.splice(sourceIndex, 1);
+    next.splice(targetIndex, 0, moved);
+    return next.map((item, index) => ({ ...item, position: index }));
+  };
+
+  type DragType = "activities" | "cities" | "places";
+  const [dragging, setDragging] = useState<{
+    dayId: string;
+    type: DragType;
+    itemId: string;
+  } | null>(null);
   const safePlaces = useMemo(
     () => (Array.isArray(places) ? places : []),
     [places]
@@ -359,6 +393,66 @@ export default function ItineraryPage() {
     }
   };
 
+  const handleDrop = (type: DragType, dayId: string, targetId: string) => {
+    if (!dragging) {
+      return;
+    }
+    if (dragging.dayId !== dayId || dragging.type !== type) {
+      return;
+    }
+    if (dragging.itemId === targetId) {
+      return;
+    }
+
+    const currentActivities = dayActivities[dayId] ?? [];
+    const currentCities = dayCities[dayId] ?? [];
+    const currentPlaces = dayPlaces[dayId] ?? [];
+
+    if (type === "activities") {
+      const next = reorderById(currentActivities, dragging.itemId, targetId);
+      setDayActivities((current) => ({
+        ...current,
+        [dayId]: next
+      }));
+
+      if (tripId) {
+        void reorderTripDayActivities(tripId, dayId, {
+          orderedIds: next.map((item) => item.id)
+        });
+      }
+    }
+
+    if (type === "cities") {
+      const next = reorderById(currentCities, dragging.itemId, targetId);
+      setDayCities((current) => ({
+        ...current,
+        [dayId]: next
+      }));
+
+      if (tripId) {
+        void reorderTripDayCities(tripId, dayId, {
+          orderedIds: next.map((item) => item.id)
+        });
+      }
+    }
+
+    if (type === "places") {
+      const next = reorderById(currentPlaces, dragging.itemId, targetId);
+      setDayPlaces((current) => ({
+        ...current,
+        [dayId]: next
+      }));
+
+      if (tripId) {
+        void reorderTripDayPlaces(tripId, dayId, {
+          orderedIds: next.map((item) => item.id)
+        });
+      }
+    }
+
+    setDragging(null);
+  };
+
   const handleAddCity = async (dayId: string) => {
     if (!tripId) {
       return;
@@ -494,6 +588,17 @@ export default function ItineraryPage() {
                       key={entry.id}
                       justify="space-between"
                       align="center"
+                      draggable
+                      onDragStart={() =>
+                        setDragging({
+                          dayId: day.id,
+                          type: "activities",
+                          itemId: entry.id
+                        })
+                      }
+                      onDragEnd={() => setDragging(null)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => handleDrop("activities", day.id, entry.id)}
                     >
                       <Stack spacing={1}>
                         <Text fontWeight="semibold">
@@ -568,6 +673,17 @@ export default function ItineraryPage() {
                       key={entry.id}
                       justify="space-between"
                       align="center"
+                      draggable
+                      onDragStart={() =>
+                        setDragging({
+                          dayId: day.id,
+                          type: "cities",
+                          itemId: entry.id
+                        })
+                      }
+                      onDragEnd={() => setDragging(null)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => handleDrop("cities", day.id, entry.id)}
                     >
                       <Stack spacing={1}>
                         <Tag size="sm" colorScheme="teal" alignSelf="flex-start">
@@ -636,6 +752,17 @@ export default function ItineraryPage() {
                       key={entry.id}
                       justify="space-between"
                       align="center"
+                      draggable
+                      onDragStart={() =>
+                        setDragging({
+                          dayId: day.id,
+                          type: "places",
+                          itemId: entry.id
+                        })
+                      }
+                      onDragEnd={() => setDragging(null)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => handleDrop("places", day.id, entry.id)}
                     >
                       <Stack spacing={0}>
                         <Text fontWeight="semibold">

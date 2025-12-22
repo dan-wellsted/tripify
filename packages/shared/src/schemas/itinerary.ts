@@ -61,6 +61,10 @@ export const createTripDayActivitySchema = z.object({
   position: z.number().int().nonnegative().optional()
 });
 
+export const reorderSchema = z.object({
+  orderedIds: z.array(z.string()).min(1)
+});
+
 export const tripDayPlaceSchema = z.object({
   id: z.string(),
   tripDayId: z.string(),
@@ -92,6 +96,7 @@ export type TripDayActivityWithActivity = z.infer<
 export type CreateTripDayActivityInput = z.infer<
   typeof createTripDayActivitySchema
 >;
+export type ReorderInput = z.infer<typeof reorderSchema>;
 export type TripDayPlace = z.infer<typeof tripDayPlaceSchema>;
 export type TripDayPlaceWithPlace = z.infer<
   typeof tripDayPlaceWithPlaceSchema

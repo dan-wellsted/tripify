@@ -3,6 +3,7 @@ import type {
   CreateTripDayActivityInput,
   CreateTripDayCityInput,
   CreateTripDayPlaceInput,
+  ReorderInput,
   TripDayActivityWithActivity,
   TripDayCityWithCity,
   TripDay,
@@ -17,6 +18,46 @@ export async function listTripDays(tripId: string) {
 export async function createTripDay(tripId: string, payload: CreateTripDayInput) {
   return apiRequest<TripDay>(`/trips/${tripId}/days`, {
     method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function reorderTripDays(tripId: string, payload: ReorderInput) {
+  return apiRequest<void>(`/trips/${tripId}/days/reorder`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function reorderTripDayActivities(
+  tripId: string,
+  dayId: string,
+  payload: ReorderInput
+) {
+  return apiRequest<void>(`/trips/${tripId}/days/${dayId}/activities/reorder`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function reorderTripDayCities(
+  tripId: string,
+  dayId: string,
+  payload: ReorderInput
+) {
+  return apiRequest<void>(`/trips/${tripId}/days/${dayId}/cities/reorder`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function reorderTripDayPlaces(
+  tripId: string,
+  dayId: string,
+  payload: ReorderInput
+) {
+  return apiRequest<void>(`/trips/${tripId}/days/${dayId}/places/reorder`, {
+    method: "PATCH",
     body: JSON.stringify(payload)
   });
 }
