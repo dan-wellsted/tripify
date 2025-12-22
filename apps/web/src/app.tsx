@@ -14,6 +14,7 @@ import RegisterPage from "./features/auth/RegisterPage";
 import { useAuth } from "./features/auth/AuthProvider";
 import TripsPage from "./features/trips/TripsPage";
 import TripDetailPage from "./features/trips/TripDetailPage";
+import ItineraryPage from "./features/itinerary/ItineraryPage";
 
 export default function App() {
   const { user, isLoading, logout, error } = useAuth();
@@ -107,6 +108,10 @@ export default function App() {
         <Route
           path="/trips/:tripId"
           element={user ? <TripDetailPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/trips/:tripId/itinerary"
+          element={user ? <ItineraryPage /> : <Navigate to="/login" replace />}
         />
         <Route
           path="/login"

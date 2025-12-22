@@ -53,14 +53,21 @@ export default function TripDetailPage() {
 
   return (
     <Stack spacing={6} maxW="720px" mx="auto">
-      <Button
-        as={RouterLink}
-        to="/trips"
-        variant="ghost"
-        alignSelf="flex-start"
-      >
-        Back to trips
-      </Button>
+      <Stack direction={{ base: "column", sm: "row" }} spacing={3}>
+        <Button as={RouterLink} to="/trips" variant="ghost">
+          Back to trips
+        </Button>
+        {trip ? (
+          <Button
+            as={RouterLink}
+            to={`/trips/${trip.id}/itinerary`}
+            colorScheme="blue"
+            variant="outline"
+          >
+            View itinerary
+          </Button>
+        ) : null}
+      </Stack>
       {error ? <Text color="red.500">{error}</Text> : null}
       {trip ? (
         <Box bg="white" p={{ base: 6, md: 8 }} rounded="lg" shadow="md">

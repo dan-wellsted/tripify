@@ -112,7 +112,10 @@ export default function TripsPage() {
       >
         <Stack spacing={4} as="form" onSubmit={handleSubmit}>
           <Heading size="lg">Create a trip</Heading>
-          <Text color="gray.600">Add a new trip to start planning.</Text>
+          <Text color="gray.600">
+            Add a new trip to start planning. Set start and end dates to
+            generate itinerary days automatically.
+          </Text>
           {error ? <Text color="red.500">{error}</Text> : null}
           <FormControl isRequired>
             <FormLabel>Title</FormLabel>

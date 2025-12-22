@@ -5,6 +5,7 @@ import {
 } from "@tripplanner/shared";
 import prisma from "../../lib/db.js";
 import { sendError } from "../../lib/errors.js";
+import { ensureItineraryDays } from "./helpers.js";
 
 function getUserId(req: Request) {
   return req.session.userId;
@@ -51,6 +52,9 @@ export async function createTripHandler(req: Request, res: Response) {
   }
 
   const { title, description, startDate, endDate } = result.data;
+  if ((startDate && !endDate) || (!startDate && endDate)) {
+    return sendError(res, 400, "VALIDATION_ERROR", "Provide both startDate and endDate.");
+  }
   const trip = await prisma.trip.create({
     data: {
       ownerId: userId,
@@ -60,6 +64,14 @@ export async function createTripHandler(req: Request, res: Response) {
       endDate: endDate ? new Date(endDate) : null
     }
   });
+
+  if (trip.startDate && trip.endDate) {
+    await ensureItineraryDays({
+      tripId: trip.id,
+      startDate: trip.startDate,
+      endDate: trip.endDate
+    });
+  }
 
   return res.status(201).json(tripToResponse(trip));
 }
@@ -115,6 +127,9 @@ export async function updateTripHandler(req: Request, res: Response) {
   }
 
   const { title, description, startDate, endDate } = result.data;
+  if ((startDate && !endDate) || (!startDate && endDate)) {
+    return sendError(res, 400, "VALIDATION_ERROR", "Provide both startDate and endDate.");
+  }
   const updated = await prisma.trip.update({
     where: { id: existing.id },
     data: {
@@ -124,6 +139,16 @@ export async function updateTripHandler(req: Request, res: Response) {
       endDate: endDate ? new Date(endDate) : existing.endDate
     }
   });
+
+  if (startDate || endDate) {
+    if (updated.startDate && updated.endDate) {
+      await ensureItineraryDays({
+        tripId: updated.id,
+        startDate: updated.startDate,
+        endDate: updated.endDate
+      });
+    }
+  }
 
   return res.status(200).json(tripToResponse(updated));
 }

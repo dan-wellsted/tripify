@@ -26,6 +26,10 @@ Trip / experience planning web app (mobile later).
 - Typecheck passes
 - Lint passes
 
+## Workflow
+- Create a new git branch at the start of each ticket.
+- Push changes at the end of each ticket.
+
 ## Testing notes
 - API tests require Postgres and `DATABASE_URL` set (see `prisma/.env.example`).
 - Run API migrations before tests: `pnpm --filter api prisma migrate dev`.
