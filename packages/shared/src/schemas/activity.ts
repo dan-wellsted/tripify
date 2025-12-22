@@ -28,6 +28,28 @@ function validateTimeRange(
   }
 }
 
+function validateTimeZones(
+  startTime: string | undefined,
+  endTime: string | undefined,
+  startTimeZone: string | undefined,
+  endTimeZone: string | undefined,
+  ctx: z.RefinementCtx
+) {
+  if (startTime && !startTimeZone) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Provide startTimeZone when startTime is set."
+    });
+  }
+
+  if (endTime && !endTimeZone) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Provide endTimeZone when endTime is set."
+    });
+  }
+}
+
 export const activitySchema = z.object({
   id: z.string(),
   ownerId: z.string(),
@@ -37,6 +59,8 @@ export const activitySchema = z.object({
   notes: z.string().nullable(),
   startTime: z.string().datetime().nullable(),
   endTime: z.string().datetime().nullable(),
+  startTimeZone: z.string().nullable(),
+  endTimeZone: z.string().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime()
 });
@@ -51,19 +75,35 @@ const activityInputSchema = z.object({
   notes: z.string().max(2000).optional(),
   startTime: isoDateSchema,
   endTime: isoDateSchema,
+  startTimeZone: z.string().max(64).optional(),
+  endTimeZone: z.string().max(64).optional(),
   placeId: z.string().optional()
 });
 
 export const createActivitySchema = activityInputSchema.superRefine(
-  ({ startTime, endTime }, ctx) => {
+  ({ startTime, endTime, startTimeZone, endTimeZone }, ctx) => {
     validateTimeRange(startTime, endTime, ctx);
+    validateTimeZones(
+      startTime,
+      endTime,
+      startTimeZone,
+      endTimeZone,
+      ctx
+    );
   }
 );
 
 export const updateActivitySchema = activityInputSchema
   .partial()
-  .superRefine(({ startTime, endTime }, ctx) => {
+  .superRefine(({ startTime, endTime, startTimeZone, endTimeZone }, ctx) => {
     validateTimeRange(startTime, endTime, ctx);
+    validateTimeZones(
+      startTime,
+      endTime,
+      startTimeZone,
+      endTimeZone,
+      ctx
+    );
   });
 
 export type Activity = z.infer<typeof activitySchema>;

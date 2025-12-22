@@ -38,6 +38,7 @@ import {
 import { listActivities } from "../../api/activities";
 import { listCities } from "../../api/cities";
 import { listPlaces } from "../../api/places";
+import { formatZonedTime } from "../../utils/dates";
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString();
@@ -604,6 +605,21 @@ export default function ItineraryPage() {
                         <Text fontWeight="semibold">
                           {entry.activity.title}
                         </Text>
+                        {entry.activity.startTime || entry.activity.endTime ? (
+                          <Text fontSize="sm" color="gray.500">
+                            {formatZonedTime(
+                              entry.activity.startTime,
+                              entry.activity.startTimeZone
+                            )}
+                            {entry.activity.startTime || entry.activity.endTime
+                              ? " → "
+                              : ""}
+                            {formatZonedTime(
+                              entry.activity.endTime,
+                              entry.activity.endTimeZone
+                            )}
+                          </Text>
+                        ) : null}
                         {entry.activity.place ? (
                           <Tag
                             size="sm"

@@ -20,6 +20,7 @@ import {
 } from "../../api/activities";
 import { listPlaces } from "../../api/places";
 import { ApiError } from "../../api/client";
+import { formatZonedTime } from "../../utils/dates";
 
 function toIsoDateTime(value: string) {
   if (!value) {
@@ -27,6 +28,10 @@ function toIsoDateTime(value: string) {
   }
 
   return new Date(value).toISOString();
+}
+
+function getUserTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
 export default function ActivitiesPage() {
@@ -107,12 +112,15 @@ export default function ActivitiesPage() {
     setError(null);
 
     try {
+      const timeZone = getUserTimeZone();
       const newActivity = await createActivity({
         title,
         description: description.length ? description : undefined,
         notes: notes.length ? notes : undefined,
         startTime: toIsoDateTime(startTime),
         endTime: toIsoDateTime(endTime),
+        startTimeZone: startTime ? timeZone : undefined,
+        endTimeZone: endTime ? timeZone : undefined,
         placeId: placeId.length ? placeId : undefined
       });
 
@@ -230,6 +238,13 @@ export default function ActivitiesPage() {
                 <Tag size="sm" colorScheme="purple" alignSelf="flex-start">
                   <TagLabel>{activity.place.name}</TagLabel>
                 </Tag>
+              ) : null}
+              {activity.startTime || activity.endTime ? (
+                <Text fontSize="sm" color="gray.500">
+                  {formatZonedTime(activity.startTime, activity.startTimeZone)}
+                  {activity.startTime || activity.endTime ? " → " : ""}
+                  {formatZonedTime(activity.endTime, activity.endTimeZone)}
+                </Text>
               ) : null}
               <Text color="gray.600">
                 {activity.description || "No description"}
