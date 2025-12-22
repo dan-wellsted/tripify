@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import {
+  createTripDayActivitySchema,
   createTripDayCitySchema,
   createTripDayPlaceSchema,
   createTripDaySchema
@@ -141,6 +142,72 @@ function tripDayCityToResponse(dayCity: {
       longitude: dayCity.city.longitude,
       createdAt: dayCity.city.createdAt.toISOString(),
       updatedAt: dayCity.city.updatedAt.toISOString()
+    }
+  };
+}
+
+function tripDayActivityToResponse(dayActivity: {
+  id: string;
+  tripDayId: string;
+  activityId: string;
+  position: number;
+  createdAt: Date;
+  updatedAt: Date;
+  activity: {
+    id: string;
+    ownerId: string;
+    placeId: string | null;
+    title: string;
+    description: string | null;
+    notes: string | null;
+    startTime: Date | null;
+    endTime: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    place: {
+      id: string;
+      ownerId: string;
+      name: string;
+      description: string | null;
+      address: string | null;
+      latitude: number | null;
+      longitude: number | null;
+      createdAt: Date;
+      updatedAt: Date;
+    } | null;
+  };
+}) {
+  return {
+    id: dayActivity.id,
+    tripDayId: dayActivity.tripDayId,
+    activityId: dayActivity.activityId,
+    position: dayActivity.position,
+    createdAt: dayActivity.createdAt.toISOString(),
+    updatedAt: dayActivity.updatedAt.toISOString(),
+    activity: {
+      id: dayActivity.activity.id,
+      ownerId: dayActivity.activity.ownerId,
+      placeId: dayActivity.activity.placeId,
+      title: dayActivity.activity.title,
+      description: dayActivity.activity.description,
+      notes: dayActivity.activity.notes,
+      startTime: dayActivity.activity.startTime?.toISOString() ?? null,
+      endTime: dayActivity.activity.endTime?.toISOString() ?? null,
+      createdAt: dayActivity.activity.createdAt.toISOString(),
+      updatedAt: dayActivity.activity.updatedAt.toISOString(),
+      place: dayActivity.activity.place
+        ? {
+            id: dayActivity.activity.place.id,
+            ownerId: dayActivity.activity.place.ownerId,
+            name: dayActivity.activity.place.name,
+            description: dayActivity.activity.place.description,
+            address: dayActivity.activity.place.address,
+            latitude: dayActivity.activity.place.latitude,
+            longitude: dayActivity.activity.place.longitude,
+            createdAt: dayActivity.activity.place.createdAt.toISOString(),
+            updatedAt: dayActivity.activity.place.updatedAt.toISOString()
+          }
+        : null
     }
   };
 }
@@ -291,6 +358,97 @@ export async function deleteTripDayCityHandler(req: Request, res: Response) {
   }
 
   await prisma.tripDayCity.delete({ where: { id: dayCity.id } });
+
+  return res.status(204).send();
+}
+
+export async function listTripDayActivitiesHandler(req: Request, res: Response) {
+  const tripDayContext = await requireTripDay(req, res);
+  if (!tripDayContext) {
+    return;
+  }
+
+  const dayActivities = await prisma.tripDayActivity.findMany({
+    where: { tripDayId: tripDayContext.day.id },
+    orderBy: { position: "asc" },
+    include: { activity: { include: { place: true } } }
+  });
+
+  return res.status(200).json(dayActivities.map(tripDayActivityToResponse));
+}
+
+export async function addTripDayActivityHandler(req: Request, res: Response) {
+  const tripDayContext = await requireTripDay(req, res);
+  if (!tripDayContext) {
+    return;
+  }
+
+  const result = createTripDayActivitySchema.safeParse(req.body);
+  if (!result.success) {
+    return sendError(res, 400, "VALIDATION_ERROR", "Invalid request payload.");
+  }
+
+  const userId = req.session.userId as string;
+  const { activityId, position } = result.data;
+
+  const activity = await prisma.activity.findFirst({
+    where: { id: activityId, ownerId: userId },
+    include: { place: true }
+  });
+
+  if (!activity) {
+    return sendError(res, 404, "NOT_FOUND", "Activity not found.");
+  }
+
+  const lastActivity = await prisma.tripDayActivity.findFirst({
+    where: { tripDayId: tripDayContext.day.id },
+    orderBy: { position: "desc" }
+  });
+
+  const nextPosition = position ?? (lastActivity?.position ?? -1) + 1;
+
+  const dayActivity = await prisma.$transaction(async (tx) => {
+    if (position !== undefined) {
+      await tx.tripDayActivity.updateMany({
+        where: {
+          tripDayId: tripDayContext.day.id,
+          position: { gte: position }
+        },
+        data: { position: { increment: 1 } }
+      });
+    }
+
+    return tx.tripDayActivity.create({
+      data: {
+        tripDayId: tripDayContext.day.id,
+        activityId: activity.id,
+        position: nextPosition
+      },
+      include: { activity: { include: { place: true } } }
+    });
+  });
+
+  return res.status(201).json(tripDayActivityToResponse(dayActivity));
+}
+
+export async function deleteTripDayActivityHandler(req: Request, res: Response) {
+  const tripDayContext = await requireTripDay(req, res);
+  if (!tripDayContext) {
+    return;
+  }
+
+  const dayActivity = await prisma.tripDayActivity.findFirst({
+    where: {
+      id: req.params.dayActivityId,
+      tripDayId: tripDayContext.day.id
+    }
+  });
+
+  if (!dayActivity) {
+    return sendError(res, 404, "NOT_FOUND", "Day activity not found.");
+  }
+
+  await prisma.tripDayActivity.delete({ where: { id: dayActivity.id } });
 
   return res.status(204).send();
 }
