@@ -12,6 +12,8 @@ function activityToResponse(activity: {
   notes: string | null;
   startTime: Date | null;
   endTime: Date | null;
+  startTimeZone: string | null;
+  endTimeZone: string | null;
   createdAt: Date;
   updatedAt: Date;
   place: {
@@ -35,6 +37,8 @@ function activityToResponse(activity: {
     notes: activity.notes,
     startTime: activity.startTime?.toISOString() ?? null,
     endTime: activity.endTime?.toISOString() ?? null,
+    startTimeZone: activity.startTimeZone,
+    endTimeZone: activity.endTimeZone,
     createdAt: activity.createdAt.toISOString(),
     updatedAt: activity.updatedAt.toISOString(),
     place: activity.place
@@ -99,8 +103,16 @@ export async function createActivityHandler(req: Request, res: Response) {
     return sendError(res, 400, "VALIDATION_ERROR", "Invalid request payload.");
   }
 
-  const { title, description, notes, startTime, endTime, placeId } =
-    result.data;
+  const {
+    title,
+    description,
+    notes,
+    startTime,
+    endTime,
+    startTimeZone,
+    endTimeZone,
+    placeId
+  } = result.data;
 
   const place = await resolvePlace(userId, placeId);
   if (placeId && !place) {
@@ -115,6 +127,8 @@ export async function createActivityHandler(req: Request, res: Response) {
       notes: notes ?? null,
       startTime: startTime ? new Date(startTime) : null,
       endTime: endTime ? new Date(endTime) : null,
+      startTimeZone: startTimeZone ?? null,
+      endTimeZone: endTimeZone ?? null,
       placeId: place?.id ?? null
     },
     include: { place: true }
@@ -160,8 +174,16 @@ export async function updateActivityHandler(req: Request, res: Response) {
     return sendError(res, 404, "NOT_FOUND", "Activity not found.");
   }
 
-  const { title, description, notes, startTime, endTime, placeId } =
-    result.data;
+  const {
+    title,
+    description,
+    notes,
+    startTime,
+    endTime,
+    startTimeZone,
+    endTimeZone,
+    placeId
+  } = result.data;
 
   let place = null;
   if (placeId !== undefined) {
@@ -182,6 +204,12 @@ export async function updateActivityHandler(req: Request, res: Response) {
         : {}),
       ...(endTime !== undefined
         ? { endTime: endTime ? new Date(endTime) : null }
+        : {}),
+      ...(startTimeZone !== undefined
+        ? { startTimeZone: startTimeZone ?? null }
+        : {}),
+      ...(endTimeZone !== undefined
+        ? { endTimeZone: endTimeZone ?? null }
         : {}),
       ...(placeId !== undefined ? { placeId: place?.id ?? null } : {})
     },

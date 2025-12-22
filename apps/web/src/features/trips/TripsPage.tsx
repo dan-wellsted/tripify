@@ -22,6 +22,10 @@ function toIsoDate(value: string) {
   return `${value}T00:00:00.000Z`;
 }
 
+function getUserTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
 function formatDate(value: string | null) {
   if (!value) {
     return "";
@@ -79,11 +83,14 @@ export default function TripsPage() {
     setError(null);
 
     try {
+      const timeZone = getUserTimeZone();
       const newTrip = await createTrip({
         title,
         description: description.length ? description : undefined,
         startDate: toIsoDate(startDate),
-        endDate: toIsoDate(endDate)
+        endDate: toIsoDate(endDate),
+        startDateTimeZone: startDate ? timeZone : undefined,
+        endDateTimeZone: endDate ? timeZone : undefined
       });
 
       setTrips((current) => [newTrip, ...current]);

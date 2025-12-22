@@ -18,6 +18,8 @@ function tripToResponse(trip: {
   description: string | null;
   startDate: Date | null;
   endDate: Date | null;
+  startDateTimeZone: string | null;
+  endDateTimeZone: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -28,6 +30,8 @@ function tripToResponse(trip: {
     description: trip.description,
     startDate: trip.startDate ? trip.startDate.toISOString() : null,
     endDate: trip.endDate ? trip.endDate.toISOString() : null,
+    startDateTimeZone: trip.startDateTimeZone,
+    endDateTimeZone: trip.endDateTimeZone,
     createdAt: trip.createdAt.toISOString(),
     updatedAt: trip.updatedAt.toISOString()
   };
@@ -51,7 +55,14 @@ export async function createTripHandler(req: Request, res: Response) {
     return sendError(res, 400, "VALIDATION_ERROR", "Invalid request payload.");
   }
 
-  const { title, description, startDate, endDate } = result.data;
+  const {
+    title,
+    description,
+    startDate,
+    endDate,
+    startDateTimeZone,
+    endDateTimeZone
+  } = result.data;
   if ((startDate && !endDate) || (!startDate && endDate)) {
     return sendError(res, 400, "VALIDATION_ERROR", "Provide both startDate and endDate.");
   }
@@ -61,7 +72,9 @@ export async function createTripHandler(req: Request, res: Response) {
       title,
       description: description ?? null,
       startDate: startDate ? new Date(startDate) : null,
-      endDate: endDate ? new Date(endDate) : null
+      endDate: endDate ? new Date(endDate) : null,
+      startDateTimeZone: startDateTimeZone ?? null,
+      endDateTimeZone: endDateTimeZone ?? null
     }
   });
 
@@ -126,7 +139,14 @@ export async function updateTripHandler(req: Request, res: Response) {
     return sendError(res, 404, "NOT_FOUND", "Trip not found.");
   }
 
-  const { title, description, startDate, endDate } = result.data;
+  const {
+    title,
+    description,
+    startDate,
+    endDate,
+    startDateTimeZone,
+    endDateTimeZone
+  } = result.data;
   if ((startDate && !endDate) || (!startDate && endDate)) {
     return sendError(res, 400, "VALIDATION_ERROR", "Provide both startDate and endDate.");
   }
@@ -136,7 +156,9 @@ export async function updateTripHandler(req: Request, res: Response) {
       title: title ?? existing.title,
       description: description ?? existing.description,
       startDate: startDate ? new Date(startDate) : existing.startDate,
-      endDate: endDate ? new Date(endDate) : existing.endDate
+      endDate: endDate ? new Date(endDate) : existing.endDate,
+      startDateTimeZone: startDateTimeZone ?? existing.startDateTimeZone,
+      endDateTimeZone: endDateTimeZone ?? existing.endDateTimeZone
     }
   });
 

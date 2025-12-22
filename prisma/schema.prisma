@@ -27,6 +27,8 @@ model Trip {
   description String?
   startDate   DateTime?
   endDate     DateTime?
+  startDateTimeZone String?
+  endDateTimeZone   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   itinerary   Itinerary?
@@ -88,6 +90,8 @@ model Activity {
   notes       String?
   startTime   DateTime?
   endTime     DateTime?
+  startTimeZone String?
+  endTimeZone   String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   dayActivities TripDayActivity[]
