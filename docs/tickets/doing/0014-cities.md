@@ -4,7 +4,8 @@
 Add cities as higher-level locations that can be assigned to trip days, separate from POI places.
 
 ## Scope
-- Prisma model: City (name, optional country/region, optional lat/lng).
+- Prisma model: City (global library, name, optional country/region, optional lat/lng).
+- Enforce uniqueness on (name, country) to avoid duplicates.
 - Join model to attach cities to trip days (ordered).
 - Shared Zod schemas.
 - API endpoints to CRUD cities and attach/detach them from trip days.

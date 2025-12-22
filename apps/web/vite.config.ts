@@ -1,17 +1,16 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+const apiTarget = "http://localhost:3000";
+
 export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/auth": {
-        target: "http://localhost:3000",
-        changeOrigin: true
-      },
-      "/trips": {
-        target: "http://localhost:3000",
-        changeOrigin: true
+      "/api": {
+        target: apiTarget,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, "")
       }
     }
   }

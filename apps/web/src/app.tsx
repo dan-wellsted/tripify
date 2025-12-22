@@ -8,16 +8,35 @@ import {
   Stack,
   Text
 } from "@chakra-ui/react";
-import { Link as RouterLink, Navigate, Route, Routes } from "react-router-dom";
+import {
+  Link as RouterLink,
+  Navigate,
+  Route,
+  Routes,
+  useLocation
+} from "react-router-dom";
 import LoginPage from "./features/auth/LoginPage";
 import RegisterPage from "./features/auth/RegisterPage";
 import { useAuth } from "./features/auth/AuthProvider";
 import TripsPage from "./features/trips/TripsPage";
 import TripDetailPage from "./features/trips/TripDetailPage";
 import ItineraryPage from "./features/itinerary/ItineraryPage";
+import PlacesPage from "./features/places/PlacesPage";
+import CitiesPage from "./features/cities/CitiesPage";
 
 export default function App() {
   const { user, isLoading, logout, error } = useAuth();
+  const location = useLocation();
+
+  const requireAuth = (element: React.ReactElement) => {
+    if (isLoading) {
+      return <Text>Loading session…</Text>;
+    }
+    if (!user) {
+      return <Navigate to="/login" replace state={{ from: location }} />;
+    }
+    return element;
+  };
 
   return (
     <Box
@@ -50,6 +69,12 @@ export default function App() {
             </>
           ) : (
             <>
+              <Button as={RouterLink} to="/places" variant="ghost" size="sm">
+                Places
+              </Button>
+              <Button as={RouterLink} to="/cities" variant="ghost" size="sm">
+                Cities
+              </Button>
               <Text color="gray.700" fontSize="sm">
                 {user.name ?? user.email}
               </Text>
@@ -103,23 +128,47 @@ export default function App() {
         />
         <Route
           path="/trips"
-          element={user ? <TripsPage /> : <Navigate to="/login" replace />}
+          element={requireAuth(<TripsPage />)}
         />
         <Route
           path="/trips/:tripId"
-          element={user ? <TripDetailPage /> : <Navigate to="/login" replace />}
+          element={requireAuth(<TripDetailPage />)}
         />
         <Route
           path="/trips/:tripId/itinerary"
-          element={user ? <ItineraryPage /> : <Navigate to="/login" replace />}
+          element={requireAuth(<ItineraryPage />)}
+        />
+        <Route
+          path="/places"
+          element={requireAuth(<PlacesPage />)}
+        />
+        <Route
+          path="/cities"
+          element={requireAuth(<CitiesPage />)}
         />
         <Route
           path="/login"
-          element={user ? <Navigate to="/" replace /> : <LoginPage />}
+          element={
+            isLoading ? (
+              <Text>Loading session…</Text>
+            ) : user ? (
+              <Navigate to="/" replace />
+            ) : (
+              <LoginPage />
+            )
+          }
         />
         <Route
           path="/register"
-          element={user ? <Navigate to="/" replace /> : <RegisterPage />}
+          element={
+            isLoading ? (
+              <Text>Loading session…</Text>
+            ) : user ? (
+              <Navigate to="/" replace />
+            ) : (
+              <RegisterPage />
+            )
+          }
         />
       </Routes>
     </Box>

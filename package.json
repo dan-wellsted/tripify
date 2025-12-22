@@ -11,8 +11,12 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "dev:apps": "concurrently -n api,web -c blue,green \"pnpm --filter @tripplanner/api dev\" \"pnpm --filter @tripplanner/web dev\"",
+    "db:seed": "prisma db seed",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
   }
 }
