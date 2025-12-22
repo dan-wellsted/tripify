@@ -9,12 +9,13 @@ import {
   Stack,
   Text
 } from "@chakra-ui/react";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { ApiError } from "../../api/client";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,9 +27,13 @@ export default function LoginPage() {
     setIsSubmitting(true);
     setError(null);
 
+    const redirectTo =
+      (location.state as { from?: { pathname?: string } } | null)?.from
+        ?.pathname ?? "/";
+
     try {
       await login({ email, password });
-      navigate("/");
+      navigate(redirectTo);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

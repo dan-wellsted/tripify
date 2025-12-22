@@ -16,7 +16,7 @@ export class ApiError extends Error {
   }
 }
 
-const API_URL = import.meta.env.VITE_API_URL?.toString() ?? "";
+const API_URL = import.meta.env.VITE_API_URL?.toString() ?? "/api";
 
 export async function apiRequest<T>(
   path: string,

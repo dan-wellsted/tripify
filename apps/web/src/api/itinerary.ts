@@ -1,4 +1,11 @@
-import type { CreateTripDayInput, TripDay } from "@tripplanner/shared";
+import type {
+  CreateTripDayInput,
+  CreateTripDayCityInput,
+  CreateTripDayPlaceInput,
+  TripDayCityWithCity,
+  TripDay,
+  TripDayPlaceWithPlace
+} from "@tripplanner/shared";
 import { apiRequest } from "./client";
 
 export async function listTripDays(tripId: string) {
@@ -10,4 +17,70 @@ export async function createTripDay(tripId: string, payload: CreateTripDayInput)
     method: "POST",
     body: JSON.stringify(payload)
   });
+}
+
+export async function listTripDayCities(tripId: string, dayId: string) {
+  return apiRequest<TripDayCityWithCity[]>(
+    `/trips/${tripId}/days/${dayId}/cities`
+  );
+}
+
+export async function addTripDayCity(
+  tripId: string,
+  dayId: string,
+  payload: CreateTripDayCityInput
+) {
+  return apiRequest<TripDayCityWithCity>(
+    `/trips/${tripId}/days/${dayId}/cities`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }
+  );
+}
+
+export async function deleteTripDayCity(
+  tripId: string,
+  dayId: string,
+  dayCityId: string
+) {
+  return apiRequest<void>(
+    `/trips/${tripId}/days/${dayId}/cities/${dayCityId}`,
+    {
+      method: "DELETE"
+    }
+  );
+}
+
+export async function listTripDayPlaces(tripId: string, dayId: string) {
+  return apiRequest<TripDayPlaceWithPlace[]>(
+    `/trips/${tripId}/days/${dayId}/places`
+  );
+}
+
+export async function addTripDayPlace(
+  tripId: string,
+  dayId: string,
+  payload: CreateTripDayPlaceInput
+) {
+  return apiRequest<TripDayPlaceWithPlace>(
+    `/trips/${tripId}/days/${dayId}/places`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }
+  );
+}
+
+export async function deleteTripDayPlace(
+  tripId: string,
+  dayId: string,
+  dayPlaceId: string
+) {
+  return apiRequest<void>(
+    `/trips/${tripId}/days/${dayId}/places/${dayPlaceId}`,
+    {
+      method: "DELETE"
+    }
+  );
 }
