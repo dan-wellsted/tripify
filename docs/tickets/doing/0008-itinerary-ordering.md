@@ -4,8 +4,9 @@
 Ensure itinerary/day ordering is deterministic and stable across updates.
 
 ## Scope
-- Decide ordering strategy (e.g., explicit position or date + sequence).
+- Decide ordering strategy (date first, then position).
 - Implement ordering fields and update logic.
+- Add drag-and-drop UI for reordering day items.
 - Add tests to verify stable ordering.
 
 ## Acceptance criteria

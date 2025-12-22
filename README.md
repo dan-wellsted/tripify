@@ -18,9 +18,12 @@ Think Wanderlog-style planning: trips, itineraries, places, activities.
 ## Domain concepts
 - Trip
 - TripDay (date-based, ordered)
-- ItineraryItem (place, activity, note)
 - Place
+- City
 - Activity
+- TripDayPlace (attach places to days)
+- TripDayCity (attach cities to days)
+- TripDayActivity (attach activities to days)
 
 ## Engineering principles
 - Domain-first modules

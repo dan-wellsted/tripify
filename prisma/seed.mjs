@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+const ownerId = "cmjh978w100004p1yrhccy4xf";
+
 const cities = [
   {
     name: "Tokyo",
@@ -69,6 +71,151 @@ async function main() {
         longitude: city.longitude
       },
       create: city
+    });
+  }
+
+  const trip = await prisma.trip.upsert({
+    where: { id: "seed-trip-japan" },
+    update: {},
+    create: {
+      id: "seed-trip-japan",
+      ownerId,
+      title: "Japan Highlights",
+      description: "Seeded trip with cities, places, and activities.",
+      startDate: new Date("2025-04-10T00:00:00.000Z"),
+      endDate: new Date("2025-04-13T00:00:00.000Z")
+    }
+  });
+
+  const itinerary = await prisma.itinerary.upsert({
+    where: { tripId: trip.id },
+    update: {},
+    create: { tripId: trip.id }
+  });
+
+  const days = await prisma.tripDay.findMany({
+    where: { itineraryId: itinerary.id },
+    orderBy: { position: "asc" }
+  });
+
+  const dayIds =
+    days.length > 0
+      ? days
+      : await prisma.tripDay.createMany({
+          data: [
+            {
+              itineraryId: itinerary.id,
+              date: new Date("2025-04-10T00:00:00.000Z"),
+              title: "Arrival",
+              position: 0
+            },
+            {
+              itineraryId: itinerary.id,
+              date: new Date("2025-04-11T00:00:00.000Z"),
+              title: "Kyoto",
+              position: 1
+            },
+            {
+              itineraryId: itinerary.id,
+              date: new Date("2025-04-12T00:00:00.000Z"),
+              title: "Osaka",
+              position: 2
+            },
+            {
+              itineraryId: itinerary.id,
+              date: new Date("2025-04-13T00:00:00.000Z"),
+              title: "Departure",
+              position: 3
+            }
+          ]
+        })
+        .then(async () =>
+          prisma.tripDay.findMany({
+            where: { itineraryId: itinerary.id },
+            orderBy: { position: "asc" }
+          })
+        );
+
+  const [tokyo, kyoto, osaka] = await Promise.all([
+    prisma.city.findFirst({ where: { name: "Tokyo", country: "Japan" } }),
+    prisma.city.findFirst({ where: { name: "Kyoto", country: "Japan" } }),
+    prisma.city.findFirst({ where: { name: "Osaka", country: "Japan" } })
+  ]);
+
+  if (kyoto && dayIds[1]) {
+    await prisma.tripDayCity.create({
+      data: { tripDayId: dayIds[1].id, cityId: kyoto.id, position: 0 }
+    });
+  }
+  if (osaka && dayIds[2]) {
+    await prisma.tripDayCity.create({
+      data: { tripDayId: dayIds[2].id, cityId: osaka.id, position: 0 }
+    });
+  }
+  if (tokyo && dayIds[0]) {
+    await prisma.tripDayCity.create({
+      data: { tripDayId: dayIds[0].id, cityId: tokyo.id, position: 0 }
+    });
+  }
+
+  const [shibuya, fushimi] = await Promise.all([
+    prisma.place.upsert({
+      where: { id: "seed-place-shibuya" },
+      update: {},
+      create: {
+        id: "seed-place-shibuya",
+        ownerId,
+        name: "Shibuya Crossing",
+        description: "Iconic Tokyo intersection.",
+        address: "Shibuya City, Tokyo",
+        latitude: 35.6595,
+        longitude: 139.7005
+      }
+    }),
+    prisma.place.upsert({
+      where: { id: "seed-place-fushimi" },
+      update: {},
+      create: {
+        id: "seed-place-fushimi",
+        ownerId,
+        name: "Fushimi Inari Taisha",
+        description: "Famed torii gates shrine.",
+        address: "Fushimi Ward, Kyoto",
+        latitude: 34.9671,
+        longitude: 135.7727
+      }
+    })
+  ]);
+
+  if (dayIds[0]) {
+    await prisma.tripDayPlace.create({
+      data: { tripDayId: dayIds[0].id, placeId: shibuya.id, position: 0 }
+    });
+  }
+  if (dayIds[1]) {
+    await prisma.tripDayPlace.create({
+      data: { tripDayId: dayIds[1].id, placeId: fushimi.id, position: 0 }
+    });
+  }
+
+  const activity = await prisma.activity.upsert({
+    where: { id: "seed-activity-tour" },
+    update: {},
+    create: {
+      id: "seed-activity-tour",
+      ownerId,
+      placeId: fushimi.id,
+      title: "Sunrise shrine walk",
+      description: "Early walk through the torii gates.",
+      notes: "Bring water and snacks.",
+      startTime: new Date("2025-04-11T21:00:00.000Z"),
+      endTime: new Date("2025-04-11T23:00:00.000Z")
+    }
+  });
+
+  if (dayIds[1]) {
+    await prisma.tripDayActivity.create({
+      data: { tripDayId: dayIds[1].id, activityId: activity.id, position: 0 }
     });
   }
 }

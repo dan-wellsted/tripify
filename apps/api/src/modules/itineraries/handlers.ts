@@ -3,7 +3,8 @@ import {
   createTripDayActivitySchema,
   createTripDayCitySchema,
   createTripDayPlaceSchema,
-  createTripDaySchema
+  createTripDaySchema,
+  reorderSchema
 } from "@tripplanner/shared";
 import prisma from "../../lib/db.js";
 import { sendError } from "../../lib/errors.js";
@@ -449,6 +450,170 @@ export async function deleteTripDayActivityHandler(req: Request, res: Response) 
   }
 
   await prisma.tripDayActivity.delete({ where: { id: dayActivity.id } });
+
+  return res.status(204).send();
+}
+
+export async function reorderTripDaysHandler(req: Request, res: Response) {
+  const trip = await requireTripOwner(req, res);
+  if (!trip) {
+    return;
+  }
+
+  const result = reorderSchema.safeParse(req.body);
+  if (!result.success) {
+    return sendError(res, 400, "VALIDATION_ERROR", "Invalid request payload.");
+  }
+
+  const { orderedIds } = result.data;
+
+  const itinerary = await prisma.itinerary.findUnique({
+    where: { tripId: trip.id }
+  });
+
+  if (!itinerary) {
+    return sendError(res, 404, "NOT_FOUND", "Itinerary not found.");
+  }
+
+  const days = await prisma.tripDay.findMany({
+    where: { itineraryId: itinerary.id },
+    select: { id: true }
+  });
+
+  const dayIds = new Set(days.map((day) => day.id));
+  const isValid =
+    orderedIds.length === dayIds.size &&
+    orderedIds.every((id) => dayIds.has(id));
+
+  if (!isValid) {
+    return sendError(res, 400, "VALIDATION_ERROR", "Invalid day order.");
+  }
+
+  await prisma.$transaction(
+    orderedIds.map((id, index) =>
+      prisma.tripDay.update({
+        where: { id },
+        data: { position: index }
+      })
+    )
+  );
+
+  return res.status(204).send();
+}
+
+export async function reorderTripDayActivitiesHandler(req: Request, res: Response) {
+  const tripDayContext = await requireTripDay(req, res);
+  if (!tripDayContext) {
+    return;
+  }
+
+  const result = reorderSchema.safeParse(req.body);
+  if (!result.success) {
+    return sendError(res, 400, "VALIDATION_ERROR", "Invalid request payload.");
+  }
+
+  const { orderedIds } = result.data;
+
+  const activities = await prisma.tripDayActivity.findMany({
+    where: { tripDayId: tripDayContext.day.id },
+    select: { id: true }
+  });
+
+  const activityIds = new Set(activities.map((item) => item.id));
+  const isValid =
+    orderedIds.length === activityIds.size &&
+    orderedIds.every((id) => activityIds.has(id));
+
+  if (!isValid) {
+    return sendError(res, 400, "VALIDATION_ERROR", "Invalid activity order.");
+  }
+
+  await prisma.$transaction(
+    orderedIds.map((id, index) =>
+      prisma.tripDayActivity.update({
+        where: { id },
+        data: { position: index }
+      })
+    )
+  );
+
+  return res.status(204).send();
+}
+
+export async function reorderTripDayCitiesHandler(req: Request, res: Response) {
+  const tripDayContext = await requireTripDay(req, res);
+  if (!tripDayContext) {
+    return;
+  }
+
+  const result = reorderSchema.safeParse(req.body);
+  if (!result.success) {
+    return sendError(res, 400, "VALIDATION_ERROR", "Invalid request payload.");
+  }
+
+  const { orderedIds } = result.data;
+
+  const cities = await prisma.tripDayCity.findMany({
+    where: { tripDayId: tripDayContext.day.id },
+    select: { id: true }
+  });
+
+  const cityIds = new Set(cities.map((item) => item.id));
+  const isValid =
+    orderedIds.length === cityIds.size &&
+    orderedIds.every((id) => cityIds.has(id));
+
+  if (!isValid) {
+    return sendError(res, 400, "VALIDATION_ERROR", "Invalid city order.");
+  }
+
+  await prisma.$transaction(
+    orderedIds.map((id, index) =>
+      prisma.tripDayCity.update({
+        where: { id },
+        data: { position: index }
+      })
+    )
+  );
+
+  return res.status(204).send();
+}
+
+export async function reorderTripDayPlacesHandler(req: Request, res: Response) {
+  const tripDayContext = await requireTripDay(req, res);
+  if (!tripDayContext) {
+    return;
+  }
+
+  const result = reorderSchema.safeParse(req.body);
+  if (!result.success) {
+    return sendError(res, 400, "VALIDATION_ERROR", "Invalid request payload.");
+  }
+
+  const { orderedIds } = result.data;
+
+  const places = await prisma.tripDayPlace.findMany({
+    where: { tripDayId: tripDayContext.day.id },
+    select: { id: true }
+  });
+
+  const placeIds = new Set(places.map((item) => item.id));
+  const isValid =
+    orderedIds.length === placeIds.size &&
+    orderedIds.every((id) => placeIds.has(id));
+
+  if (!isValid) {
+    return sendError(res, 400, "VALIDATION_ERROR", "Invalid place order.");
+  }
+
+  await prisma.$transaction(
+    orderedIds.map((id, index) =>
+      prisma.tripDayPlace.update({
+        where: { id },
+        data: { position: index }
+      })
+    )
+  );
 
   return res.status(204).send();
 }
