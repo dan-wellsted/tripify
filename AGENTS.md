@@ -1,0 +1,27 @@
+# AGENTS.md
+
+## Project
+Trip / experience planning web app (mobile later).
+
+## Stack
+- Node.js + TypeScript (ESM)
+- Prisma + Postgres
+- React + Vite
+- pnpm workspace
+
+## Core rules
+- Domain-first: trips, itineraries, days, places, activities
+- Shared Zod schemas live in `packages/shared`
+- API modules live in `apps/api/src/modules`
+- Frontend features live in `apps/web/src/features`
+- No breaking API changes without updating shared schemas
+
+## Data rules
+- Trips belong to users (and later groups)
+- Itinerary ordering must be deterministic and stable
+- Dates are stored in UTC; display in user timezone
+
+## Definition of done
+- Tests updated
+- Typecheck passes
+- Lint passes

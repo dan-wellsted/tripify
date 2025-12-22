@@ -1,0 +1,16 @@
+{
+  "name": "tripplanner",
+  "private": true,
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  }
+}
