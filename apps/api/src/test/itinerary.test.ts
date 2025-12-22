@@ -59,6 +59,8 @@ describe("itinerary days", () => {
       return;
     }
 
+    await prisma.tripDayActivity.deleteMany();
+    await prisma.activity.deleteMany();
     await prisma.tripDayCity.deleteMany();
     await prisma.city.deleteMany();
     await prisma.tripDayPlace.deleteMany();
@@ -216,5 +218,54 @@ describe("itinerary days", () => {
     expect(listResponse.status).toBe(200);
     expect(listResponse.body).toHaveLength(1);
     expect(listResponse.body[0].city.name).toBe("Kyoto");
+  }));
+
+  it("attaches activities to a day", withDatabase(async () => {
+    const owner = await createUser("owner@example.com");
+    const trip = await createTrip(
+      owner.id,
+      "Weekend",
+      "2025-06-01T00:00:00.000Z",
+      "2025-06-01T00:00:00.000Z"
+    );
+
+    const itinerary = await prisma.itinerary.create({
+      data: { tripId: trip.id }
+    });
+
+    const day = await prisma.tripDay.create({
+      data: {
+        itineraryId: itinerary.id,
+        date: new Date("2025-06-01T00:00:00.000Z"),
+        title: "Day 1",
+        position: 0
+      }
+    });
+
+    const activity = await prisma.activity.create({
+      data: {
+        ownerId: owner.id,
+        title: "Walking tour",
+        description: null,
+        notes: null,
+        startTime: null,
+        endTime: null
+      }
+    });
+
+    const attachResponse = await request(app)
+      .post(`/trips/${trip.id}/days/${day.id}/activities`)
+      .set("x-test-user-id", owner.id)
+      .send({ activityId: activity.id });
+
+    expect(attachResponse.status).toBe(201);
+
+    const listResponse = await request(app)
+      .get(`/trips/${trip.id}/days/${day.id}/activities`)
+      .set("x-test-user-id", owner.id);
+
+    expect(listResponse.status).toBe(200);
+    expect(listResponse.body).toHaveLength(1);
+    expect(listResponse.body[0].activity.title).toBe("Walking tour");
   }));
 });

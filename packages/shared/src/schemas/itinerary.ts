@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { activityWithPlaceSchema } from "./activity.js";
 import { citySchema } from "./city.js";
 import { placeSchema } from "./place.js";
 
@@ -42,6 +43,24 @@ export const createTripDayCitySchema = z.object({
   position: z.number().int().nonnegative().optional()
 });
 
+export const tripDayActivitySchema = z.object({
+  id: z.string(),
+  tripDayId: z.string(),
+  activityId: z.string(),
+  position: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime()
+});
+
+export const tripDayActivityWithActivitySchema = tripDayActivitySchema.extend({
+  activity: activityWithPlaceSchema
+});
+
+export const createTripDayActivitySchema = z.object({
+  activityId: z.string(),
+  position: z.number().int().nonnegative().optional()
+});
+
 export const tripDayPlaceSchema = z.object({
   id: z.string(),
   tripDayId: z.string(),
@@ -66,6 +85,13 @@ export type CreateTripDayInput = z.infer<typeof createTripDaySchema>;
 export type TripDayCity = z.infer<typeof tripDayCitySchema>;
 export type TripDayCityWithCity = z.infer<typeof tripDayCityWithCitySchema>;
 export type CreateTripDayCityInput = z.infer<typeof createTripDayCitySchema>;
+export type TripDayActivity = z.infer<typeof tripDayActivitySchema>;
+export type TripDayActivityWithActivity = z.infer<
+  typeof tripDayActivityWithActivitySchema
+>;
+export type CreateTripDayActivityInput = z.infer<
+  typeof createTripDayActivitySchema
+>;
 export type TripDayPlace = z.infer<typeof tripDayPlaceSchema>;
 export type TripDayPlaceWithPlace = z.infer<
   typeof tripDayPlaceWithPlaceSchema

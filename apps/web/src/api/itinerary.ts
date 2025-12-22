@@ -1,7 +1,9 @@
 import type {
   CreateTripDayInput,
+  CreateTripDayActivityInput,
   CreateTripDayCityInput,
   CreateTripDayPlaceInput,
+  TripDayActivityWithActivity,
   TripDayCityWithCity,
   TripDay,
   TripDayPlaceWithPlace
@@ -17,6 +19,39 @@ export async function createTripDay(tripId: string, payload: CreateTripDayInput)
     method: "POST",
     body: JSON.stringify(payload)
   });
+}
+
+export async function listTripDayActivities(tripId: string, dayId: string) {
+  return apiRequest<TripDayActivityWithActivity[]>(
+    `/trips/${tripId}/days/${dayId}/activities`
+  );
+}
+
+export async function addTripDayActivity(
+  tripId: string,
+  dayId: string,
+  payload: CreateTripDayActivityInput
+) {
+  return apiRequest<TripDayActivityWithActivity>(
+    `/trips/${tripId}/days/${dayId}/activities`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }
+  );
+}
+
+export async function deleteTripDayActivity(
+  tripId: string,
+  dayId: string,
+  dayActivityId: string
+) {
+  return apiRequest<void>(
+    `/trips/${tripId}/days/${dayId}/activities/${dayActivityId}`,
+    {
+      method: "DELETE"
+    }
+  );
 }
 
 export async function listTripDayCities(tripId: string, dayId: string) {
