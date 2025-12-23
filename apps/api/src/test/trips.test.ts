@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import app from "./testApp.js";
 import prisma from "../lib/db.js";
 import { hashPassword } from "../lib/auth.js";
+import { setupTestDb } from "./testDb.js";
 
 async function createUser(email: string) {
   return prisma.user.create({
@@ -33,14 +34,8 @@ describe("trips", () => {
       return;
     }
 
-    try {
-      await prisma.$connect();
-      databaseReady = true;
-    } catch {
-      databaseReady = false;
-      // eslint-disable-next-line no-console
-      console.warn("[test] database not reachable, skipping trip tests");
-    }
+    const { isReady } = await setupTestDb("trip");
+    databaseReady = isReady;
   });
 
   beforeEach(async () => {

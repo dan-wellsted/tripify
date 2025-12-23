@@ -7,10 +7,12 @@
 
 ## API
 - Requires a running Postgres and `DATABASE_URL` set (see `prisma/.env.example`).
+- Use `DATABASE_URL_TEST` for integration tests.
 - Run migrations before tests: `pnpm --filter api prisma migrate dev`.
 - Run tests: `pnpm --filter api test`.
 - `pnpm test` runs all workspace tests; `pnpm test:ci` forces CI mode.
-- We intend to make DB-backed tests fail fast when DB is unavailable (tracked in 0013).
+- Use `pnpm test:db` to reset the test database, then `pnpm test:api`.
+- Tests will fail fast in CI or when `TEST_DB_REQUIRED=true` if the DB is unreachable.
 
 ## Web
 - Run tests: `pnpm --filter web test`.

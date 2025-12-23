@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import app from "./testApp.js";
 import prisma from "../lib/db.js";
 import { hashPassword } from "../lib/auth.js";
+import { setupTestDb } from "./testDb.js";
 
 const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
 let databaseReady = false;
@@ -44,14 +45,8 @@ describe("itinerary days", () => {
       return;
     }
 
-    try {
-      await prisma.$connect();
-      databaseReady = true;
-    } catch {
-      databaseReady = false;
-      // eslint-disable-next-line no-console
-      console.warn("[test] database not reachable, skipping itinerary tests");
-    }
+    const { isReady } = await setupTestDb("itinerary");
+    databaseReady = isReady;
   });
 
   beforeEach(async () => {
