@@ -6,7 +6,7 @@
     "dev": "node --watch --import tsx/esm src/index.ts",
     "prisma": "prisma",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "echo \"lint not configured\"",
+    "lint": "eslint src --max-warnings=0",
     "test": "vitest run"
   },
   "dependencies": {

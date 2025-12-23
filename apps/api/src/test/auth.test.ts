@@ -26,7 +26,7 @@ describe("auth", () => {
     try {
       await prisma.$connect();
       databaseReady = true;
-    } catch (error) {
+    } catch {
       databaseReady = false;
       // eslint-disable-next-line no-console
       console.warn("[test] database not reachable, skipping auth tests");
