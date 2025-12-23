@@ -50,6 +50,8 @@ describe("cities", () => {
 
     await prisma.tripDayCity.deleteMany();
     await prisma.city.deleteMany();
+    await prisma.groupMember.deleteMany();
+    await prisma.group.deleteMany();
     await prisma.user.deleteMany();
   });
 

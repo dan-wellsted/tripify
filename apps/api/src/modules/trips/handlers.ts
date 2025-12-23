@@ -11,9 +11,22 @@ function getUserId(req: Request) {
   return req.session.userId;
 }
 
+async function canAccessTrip(tripId: string, userId: string) {
+  return prisma.trip.findFirst({
+    where: {
+      id: tripId,
+      OR: [
+        { ownerId: userId },
+        { group: { members: { some: { userId } } } }
+      ]
+    }
+  });
+}
+
 function tripToResponse(trip: {
   id: string;
   ownerId: string;
+  groupId: string | null;
   title: string;
   description: string | null;
   startDate: Date | null;
@@ -26,6 +39,7 @@ function tripToResponse(trip: {
   return {
     id: trip.id,
     ownerId: trip.ownerId,
+    groupId: trip.groupId,
     title: trip.title,
     description: trip.description,
     startDate: trip.startDate ? trip.startDate.toISOString() : null,
@@ -96,7 +110,12 @@ export async function listTripsHandler(req: Request, res: Response) {
   }
 
   const trips = await prisma.trip.findMany({
-    where: { ownerId: userId },
+    where: {
+      OR: [
+        { ownerId: userId },
+        { group: { members: { some: { userId } } } }
+      ]
+    },
     orderBy: { createdAt: "desc" }
   });
 
@@ -109,9 +128,7 @@ export async function getTripHandler(req: Request, res: Response) {
     return sendError(res, 401, "UNAUTHORIZED", "Not authenticated.");
   }
 
-  const trip = await prisma.trip.findFirst({
-    where: { id: req.params.tripId, ownerId: userId }
-  });
+  const trip = await canAccessTrip(req.params.tripId, userId);
 
   if (!trip) {
     return sendError(res, 404, "NOT_FOUND", "Trip not found.");
@@ -131,9 +148,7 @@ export async function updateTripHandler(req: Request, res: Response) {
     return sendError(res, 400, "VALIDATION_ERROR", "Invalid request payload.");
   }
 
-  const existing = await prisma.trip.findFirst({
-    where: { id: req.params.tripId, ownerId: userId }
-  });
+  const existing = await canAccessTrip(req.params.tripId, userId);
 
   if (!existing) {
     return sendError(res, 404, "NOT_FOUND", "Trip not found.");
@@ -181,9 +196,7 @@ export async function deleteTripHandler(req: Request, res: Response) {
     return sendError(res, 401, "UNAUTHORIZED", "Not authenticated.");
   }
 
-  const existing = await prisma.trip.findFirst({
-    where: { id: req.params.tripId, ownerId: userId }
-  });
+  const existing = await canAccessTrip(req.params.tripId, userId);
 
   if (!existing) {
     return sendError(res, 404, "NOT_FOUND", "Trip not found.");

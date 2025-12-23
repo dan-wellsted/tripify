@@ -51,6 +51,8 @@ describe("itinerary ordering", () => {
     await prisma.tripDayActivity.deleteMany();
     await prisma.tripDayCity.deleteMany();
     await prisma.tripDayPlace.deleteMany();
+    await prisma.groupMember.deleteMany();
+    await prisma.group.deleteMany();
     await prisma.tripDay.deleteMany();
     await prisma.itinerary.deleteMany();
     await prisma.trip.deleteMany();

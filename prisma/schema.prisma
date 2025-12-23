@@ -17,12 +17,16 @@ model User {
   trips        Trip[]
   places       Place[]
   activities   Activity[]
+  groupMemberships GroupMember[]
+  ownedGroups  Group[] @relation("GroupOwner")
 }
 
 model Trip {
   id          String   @id @default(cuid())
   ownerId     String
   owner       User     @relation(fields: [ownerId], references: [id])
+  groupId     String?
+  group       Group?   @relation(fields: [groupId], references: [id])
   title       String
   description String?
   startDate   DateTime?
@@ -34,6 +38,7 @@ model Trip {
   itinerary   Itinerary?
 
   @@index([ownerId, createdAt])
+  @@index([groupId])
 }
 
 model Itinerary {
@@ -113,6 +118,33 @@ model TripDayActivity {
   @@index([tripDayId, position])
   @@index([tripDayId, activityId])
   @@index([activityId])
+}
+
+model Group {
+  id        String        @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User          @relation("GroupOwner", fields: [ownerId], references: [id])
+  members   GroupMember[]
+  trips     Trip[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([ownerId])
+}
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  groupId   String
+  userId    String
+  role      String
+  group     Group    @relation(fields: [groupId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([groupId, userId])
+  @@index([userId])
 }
 
 model City {
