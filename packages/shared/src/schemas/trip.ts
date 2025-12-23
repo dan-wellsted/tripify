@@ -52,6 +52,7 @@ function validateTimeZones(
 export const tripSchema = z.object({
   id: z.string(),
   ownerId: z.string(),
+  groupId: z.string().nullable(),
   title: z.string(),
   description: z.string().nullable(),
   startDate: z.string().datetime().nullable(),

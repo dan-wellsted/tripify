@@ -51,6 +51,8 @@ describe("activities", () => {
     await prisma.tripDayActivity.deleteMany();
     await prisma.activity.deleteMany();
     await prisma.place.deleteMany();
+    await prisma.groupMember.deleteMany();
+    await prisma.group.deleteMany();
     await prisma.user.deleteMany();
   });
 

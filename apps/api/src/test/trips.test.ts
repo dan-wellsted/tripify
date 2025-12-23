@@ -48,6 +48,8 @@ describe("trips", () => {
       return;
     }
 
+    await prisma.groupMember.deleteMany();
+    await prisma.group.deleteMany();
     await prisma.trip.deleteMany();
     await prisma.user.deleteMany();
   });
@@ -114,6 +116,39 @@ describe("trips", () => {
       .set("x-test-user-id", owner.id);
 
     expect(response.status).toBe(404);
+  }));
+
+  it("allows group members to access trips", withDatabase(async () => {
+    const owner = await createUser("owner@example.com");
+    const member = await createUser("member@example.com");
+
+    const group = await prisma.group.create({
+      data: {
+        name: "Couple",
+        ownerId: owner.id,
+        members: {
+          create: [
+            { userId: owner.id, role: "owner" },
+            { userId: member.id, role: "member" }
+          ]
+        }
+      }
+    });
+
+    const trip = await prisma.trip.create({
+      data: {
+        ownerId: owner.id,
+        groupId: group.id,
+        title: "Shared Trip"
+      }
+    });
+
+    const response = await request(app)
+      .get(`/trips/${trip.id}`)
+      .set("x-test-user-id", member.id);
+
+    expect(response.status).toBe(200);
+    expect(response.body.title).toBe("Shared Trip");
   }));
 
   it("updates a trip", withDatabase(async () => {

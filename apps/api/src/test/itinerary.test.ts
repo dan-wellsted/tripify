@@ -65,6 +65,8 @@ describe("itinerary days", () => {
     await prisma.city.deleteMany();
     await prisma.tripDayPlace.deleteMany();
     await prisma.place.deleteMany();
+    await prisma.groupMember.deleteMany();
+    await prisma.group.deleteMany();
     await prisma.tripDay.deleteMany();
     await prisma.itinerary.deleteMany();
     await prisma.trip.deleteMany();

@@ -48,6 +48,8 @@ describe("places", () => {
       return;
     }
 
+    await prisma.groupMember.deleteMany();
+    await prisma.group.deleteMany();
     await prisma.tripDayPlace.deleteMany();
     await prisma.place.deleteMany();
     await prisma.user.deleteMany();
