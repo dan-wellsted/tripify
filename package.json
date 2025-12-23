@@ -23,7 +23,8 @@
     "db:seed": "prisma db seed",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "test:ci": "CI=true pnpm -r test"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"
