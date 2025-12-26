@@ -29,6 +29,14 @@ Trip / experience planning web app (mobile later).
 ## Workflow
 - Create a new git branch at the start of each ticket.
 - Push changes at the end of each ticket.
+- Use commit messages with a prefix:
+  - `feat:` new user-facing behavior
+  - `fix:` bug fix
+  - `docs:` documentation only
+  - `chore:` tooling, config, or cleanup
+  - `refactor:` code changes without behavior change
+  - `test:` tests only
+  - `style:` formatting/UI polish (no logic)
 - Add ADRs for noteworthy architecture or data model decisions.
 - Keep docs up to date as changes land (README + domain + testing + ADRs).
 

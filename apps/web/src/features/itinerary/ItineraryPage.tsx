@@ -3,6 +3,8 @@ import {
   Box,
   Button,
   Checkbox,
+  FormControl,
+  FormLabel,
   Heading,
   HStack,
   Icon,
@@ -47,13 +49,17 @@ import {
   listTripDayPlaces,
   listTripDays
 } from "../../api/itinerary";
-import { listActivities } from "../../api/activities";
+import { createActivity, listActivities } from "../../api/activities";
 import { listCities } from "../../api/cities";
-import { listPlaces } from "../../api/places";
+import { createPlace, listPlaces } from "../../api/places";
 import { formatZonedTime } from "../../utils/dates";
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString();
+}
+
+function getUserTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
 type ItineraryPageProps = {
@@ -82,21 +88,29 @@ export default function ItineraryPage({
   const [dayPlaces, setDayPlaces] = useState<
     Record<string, TripDayPlaceWithPlace[]>
   >({});
-  const [activitySelections, setActivitySelections] = useState<
-    Record<string, string>
-  >({});
-  const [placeSelections, setPlaceSelections] = useState<
-    Record<string, string>
-  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingPlaces, setIsLoadingPlaces] = useState(true);
   type DragType = "activities" | "cities" | "places";
   const [error, setError] = useState<string | null>(null);
-  const addItemDisclosure = useDisclosure();
+  const attachDisclosure = useDisclosure();
   const [modalDayId, setModalDayId] = useState<string | null>(null);
   const [modalType, setModalType] = useState<DragType | null>(null);
   const [modalCityQuery, setModalCityQuery] = useState("");
   const [modalCitySelections, setModalCitySelections] = useState<string[]>([]);
+  const quickAddDisclosure = useDisclosure();
+  const [quickAddDayId, setQuickAddDayId] = useState<string | null>(null);
+  const [quickAddMode, setQuickAddMode] = useState<
+    "activity" | "place" | "note"
+  >("activity");
+  const [quickAddTitle, setQuickAddTitle] = useState("");
+  const [quickAddNotes, setQuickAddNotes] = useState("");
+  const [quickAddPlaceId, setQuickAddPlaceId] = useState("");
+  const [quickAddTime, setQuickAddTime] = useState("");
+  const [quickAddEndTime, setQuickAddEndTime] = useState("");
+  const [quickAddType, setQuickAddType] = useState<
+    "experience" | "meal" | "travel" | "lodging"
+  >("experience");
+  const [saveToLibrary, setSaveToLibrary] = useState(true);
   const sortedDays = useMemo(
     () =>
       [...days].sort((a, b) => {
@@ -383,29 +397,6 @@ export default function ItineraryPage({
     };
   }, [resolvedTripId, sortedDays]);
 
-  const handleAddActivity = async (dayId: string) => {
-    if (!resolvedTripId) {
-      return;
-    }
-
-    const activityId = activitySelections[dayId];
-    if (!activityId) {
-      return;
-    }
-
-    try {
-      const created = await addTripDayActivity(resolvedTripId, dayId, { activityId });
-      setDayActivities((current) => ({
-        ...current,
-        [dayId]: [...(current[dayId] ?? []), created].sort(
-          (a, b) => a.position - b.position
-        )
-      }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to add activity");
-    }
-  };
-
   const handleRemoveActivity = async (
     dayId: string,
     dayActivityId: string
@@ -539,29 +530,6 @@ export default function ItineraryPage({
     }
   };
 
-  const handleAddPlace = async (dayId: string) => {
-    if (!resolvedTripId) {
-      return;
-    }
-
-    const placeId = placeSelections[dayId];
-    if (!placeId) {
-      return;
-    }
-
-    try {
-      const created = await addTripDayPlace(resolvedTripId, dayId, { placeId });
-      setDayPlaces((current) => ({
-        ...current,
-        [dayId]: [...(current[dayId] ?? []), created].sort(
-          (a, b) => a.position - b.position
-        )
-      }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to add place");
-    }
-  };
-
   const handleRemovePlace = async (dayId: string, dayPlaceId: string) => {
     if (!resolvedTripId) {
       return;
@@ -594,15 +562,122 @@ export default function ItineraryPage({
       setModalCityQuery("");
       setModalCitySelections([]);
     }
-    addItemDisclosure.onOpen();
+    attachDisclosure.onOpen();
   };
 
   const closeAddModal = () => {
-    addItemDisclosure.onClose();
+    attachDisclosure.onClose();
     setModalDayId(null);
     setModalType(null);
     setModalCityQuery("");
     setModalCitySelections([]);
+  };
+
+  const openQuickAdd = (dayId: string) => {
+    setQuickAddDayId(dayId);
+    setQuickAddMode("activity");
+    setQuickAddTitle("");
+    setQuickAddNotes("");
+    setQuickAddPlaceId("");
+    setQuickAddTime("");
+    setQuickAddEndTime("");
+    setQuickAddType("experience");
+    setSaveToLibrary(true);
+    quickAddDisclosure.onOpen();
+  };
+
+  const closeQuickAdd = () => {
+    quickAddDisclosure.onClose();
+    setQuickAddDayId(null);
+    setQuickAddTitle("");
+    setQuickAddNotes("");
+    setQuickAddPlaceId("");
+    setQuickAddTime("");
+    setQuickAddEndTime("");
+  };
+
+  const handleQuickAdd = async () => {
+    if (!resolvedTripId || !quickAddDayId || !quickAddTitle.trim()) {
+      return;
+    }
+
+    const day = days.find((entry) => entry.id === quickAddDayId);
+    const timeZone = getUserTimeZone();
+
+    try {
+      if (quickAddMode === "place") {
+        const createdPlace = await createPlace({
+          name: quickAddTitle.trim(),
+          description: quickAddNotes.length ? quickAddNotes : undefined
+        });
+
+        const created = await addTripDayPlace(resolvedTripId, quickAddDayId, {
+          placeId: createdPlace.id
+        });
+        setDayPlaces((current) => ({
+          ...current,
+          [quickAddDayId]: [...(current[quickAddDayId] ?? []), created].sort(
+            (a, b) => a.position - b.position
+          )
+        }));
+        if (saveToLibrary) {
+          setPlaces((current) => [...current, createdPlace]);
+        }
+        closeQuickAdd();
+        return;
+      }
+
+      const titlePrefix =
+        quickAddMode === "note"
+          ? "Note: "
+          : quickAddType === "travel"
+            ? "Travel: "
+            : "";
+
+      let startTime: string | undefined;
+      let endTime: string | undefined;
+      if (day && quickAddTime && quickAddEndTime) {
+        const start = new Date(day.date);
+        const [startHours, startMinutes] = quickAddTime.split(":").map(Number);
+        start.setHours(startHours, startMinutes, 0, 0);
+        startTime = start.toISOString();
+
+        const end = new Date(day.date);
+        const [endHours, endMinutes] = quickAddEndTime.split(":").map(Number);
+        end.setHours(endHours, endMinutes, 0, 0);
+        endTime = end.toISOString();
+      }
+
+      const createdActivity = await createActivity({
+        title: `${titlePrefix}${quickAddTitle.trim()}`,
+        notes: quickAddNotes.length ? quickAddNotes : undefined,
+        ...(quickAddPlaceId ? { placeId: quickAddPlaceId } : {}),
+        ...(startTime && endTime
+          ? {
+              startTime,
+              endTime,
+              startTimeZone: timeZone,
+              endTimeZone: timeZone
+            }
+          : {})
+      });
+
+      const created = await addTripDayActivity(resolvedTripId, quickAddDayId, {
+        activityId: createdActivity.id
+      });
+      setDayActivities((current) => ({
+        ...current,
+        [quickAddDayId]: [...(current[quickAddDayId] ?? []), created].sort(
+          (a, b) => a.position - b.position
+        )
+      }));
+      if (saveToLibrary && quickAddMode !== "note") {
+        setActivities((current) => [...current, createdActivity]);
+      }
+      closeQuickAdd();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to add item");
+    }
   };
 
   const handleModalAdd = async () => {
@@ -610,24 +685,18 @@ export default function ItineraryPage({
       return;
     }
 
-    if (modalType === "activities") {
-      await handleAddActivity(modalDayId);
-    }
     if (modalType === "cities") {
       await handleAddCity(modalDayId);
-    }
-    if (modalType === "places") {
-      await handleAddPlace(modalDayId);
     }
 
     closeAddModal();
   };
 
   const modalTitle =
-    modalType === "activities"
-      ? "Add activity"
-      : modalType === "cities"
-        ? "Add city"
+    modalType === "cities"
+      ? "Add city"
+      : modalType === "activities"
+        ? "Add activity"
         : modalType === "places"
           ? "Add place"
           : "Add item";
@@ -751,23 +820,24 @@ export default function ItineraryPage({
                   >
                     + Add city
                   </Button>
+                  <Button
+                    size="xs"
+                    variant="gradient"
+                    onClick={() => openQuickAdd(day.id)}
+                    whiteSpace="nowrap"
+                    minH="auto"
+                    px={3}
+                    py={1}
+                    fontSize="xs"
+                  >
+                    + Add item
+                  </Button>
                 </HStack>
               </HStack>
               <Stack spacing={2} pt={2}>
-                <HStack justify="space-between">
-                  <Heading size="xs" color="gray.600">
-                    Activities
-                  </Heading>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    borderStyle="dashed"
-                    onClick={() => openAddModal("activities", day.id)}
-                    isDisabled={safeActivities.length === 0}
-                  >
-                    + Add activity
-                  </Button>
-                </HStack>
+                <Heading size="xs" color="gray.600">
+                  Activities
+                </Heading>
                 {(dayActivities[day.id] ?? []).length === 0 ? (
                   <Text color="gray.500" fontSize="sm">
                     No activities added yet.
@@ -841,20 +911,9 @@ export default function ItineraryPage({
                 ) : null}
               </Stack>
               <Stack spacing={2} pt={2}>
-                <HStack justify="space-between">
-                  <Heading size="xs" color="gray.600">
-                    Places
-                  </Heading>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    borderStyle="dashed"
-                    onClick={() => openAddModal("places", day.id)}
-                    isDisabled={isLoadingPlaces || safePlaces.length === 0}
-                  >
-                    + Add place
-                  </Button>
-                </HStack>
+                <Heading size="xs" color="gray.600">
+                  Places
+                </Heading>
                 {(dayPlaces[day.id] ?? []).length === 0 ? (
                   <Text color="gray.500" fontSize="sm">
                     No places added yet.
@@ -909,33 +968,149 @@ export default function ItineraryPage({
         ))}
       </Stack>
 
-      <Modal isOpen={addItemDisclosure.isOpen} onClose={closeAddModal}>
+      <Modal isOpen={quickAddDisclosure.isOpen} onClose={closeQuickAdd} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Add item</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Stack spacing={4}>
+              <HStack spacing={2}>
+                {[
+                  { id: "activity", label: "Activity" },
+                  { id: "place", label: "Place" },
+                  { id: "note", label: "Note" }
+                ].map((mode) => (
+                  <Button
+                    key={mode.id}
+                    size="sm"
+                    variant={quickAddMode === mode.id ? "gradient" : "outline"}
+                    onClick={() =>
+                      setQuickAddMode(mode.id as "activity" | "place" | "note")
+                    }
+                  >
+                    {mode.label}
+                  </Button>
+                ))}
+              </HStack>
+
+              <FormControl isRequired>
+                <FormLabel>
+                  {quickAddMode === "place"
+                    ? "Place name"
+                    : quickAddMode === "note"
+                      ? "Note"
+                      : "Activity"}
+                </FormLabel>
+                <Input
+                  value={quickAddTitle}
+                  onChange={(event) => setQuickAddTitle(event.target.value)}
+                  placeholder={
+                    quickAddMode === "note"
+                      ? "Write a quick note"
+                      : "Add a title"
+                  }
+                />
+              </FormControl>
+
+              {quickAddMode === "activity" ? (
+                <HStack spacing={3} align="flex-end">
+                  <FormControl>
+                    <FormLabel>Type</FormLabel>
+                    <Select
+                      value={quickAddType}
+                      onChange={(event) =>
+                        setQuickAddType(
+                          event.target.value as
+                            | "experience"
+                            | "meal"
+                            | "travel"
+                            | "lodging"
+                        )
+                      }
+                    >
+                      <option value="experience">Experience</option>
+                      <option value="meal">Meal</option>
+                      <option value="travel">Travel</option>
+                      <option value="lodging">Lodging</option>
+                    </Select>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>Start</FormLabel>
+                    <Input
+                      type="time"
+                      value={quickAddTime}
+                      onChange={(event) => setQuickAddTime(event.target.value)}
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>End</FormLabel>
+                    <Input
+                      type="time"
+                      value={quickAddEndTime}
+                      onChange={(event) => setQuickAddEndTime(event.target.value)}
+                    />
+                  </FormControl>
+                </HStack>
+              ) : null}
+
+              {quickAddMode === "activity" ? (
+                <FormControl>
+                  <FormLabel>Link a place (optional)</FormLabel>
+                  <Select
+                    placeholder="Select a place"
+                    value={quickAddPlaceId}
+                    onChange={(event) => setQuickAddPlaceId(event.target.value)}
+                  >
+                    {safePlaces.map((place) => (
+                      <option key={place.id} value={place.id}>
+                        {place.name}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : null}
+
+              <FormControl>
+                <FormLabel>Notes (optional)</FormLabel>
+                <Input
+                  value={quickAddNotes}
+                  onChange={(event) => setQuickAddNotes(event.target.value)}
+                  placeholder="Add a reminder or detail"
+                />
+              </FormControl>
+
+              {quickAddMode !== "note" ? (
+                <Checkbox
+                  isChecked={saveToLibrary}
+                  onChange={(event) => setSaveToLibrary(event.target.checked)}
+                >
+                  Save to library for future trips
+                </Checkbox>
+              ) : null}
+            </Stack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={closeQuickAdd}>
+              Cancel
+            </Button>
+            <Button
+              variant="gradient"
+              onClick={() => void handleQuickAdd()}
+              isDisabled={!quickAddTitle.trim()}
+            >
+              Add item
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal isOpen={attachDisclosure.isOpen} onClose={closeAddModal}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>{modalTitle}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            {modalType === "activities" ? (
-              <Select
-                placeholder="Select an activity"
-                value={
-                  modalDayId ? activitySelections[modalDayId] ?? "" : ""
-                }
-                onChange={(event) =>
-                  setActivitySelections((current) => ({
-                    ...current,
-                    ...(modalDayId ? { [modalDayId]: event.target.value } : {})
-                  }))
-                }
-                isDisabled={safeActivities.length === 0}
-              >
-                {safeActivities.map((activity) => (
-                  <option key={activity.id} value={activity.id}>
-                    {activity.title}
-                  </option>
-                ))}
-              </Select>
-            ) : null}
             {modalType === "cities" ? (
               <Stack spacing={3}>
                 <Input
@@ -974,25 +1149,6 @@ export default function ItineraryPage({
                 </Stack>
               </Stack>
             ) : null}
-            {modalType === "places" ? (
-              <Select
-                placeholder={isLoadingPlaces ? "Loading places..." : "Select a place"}
-                value={modalDayId ? placeSelections[modalDayId] ?? "" : ""}
-                onChange={(event) =>
-                  setPlaceSelections((current) => ({
-                    ...current,
-                    ...(modalDayId ? { [modalDayId]: event.target.value } : {})
-                  }))
-                }
-                isDisabled={isLoadingPlaces || safePlaces.length === 0}
-              >
-                {safePlaces.map((place) => (
-                  <option key={place.id} value={place.id}>
-                    {place.name}
-                  </option>
-                ))}
-              </Select>
-            ) : null}
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={closeAddModal}>
@@ -1002,13 +1158,7 @@ export default function ItineraryPage({
               colorScheme="orange"
               onClick={() => void handleModalAdd()}
               isDisabled={
-                modalType === "activities"
-                  ? !modalDayId || !activitySelections[modalDayId]
-                  : modalType === "cities"
-                    ? modalCitySelections.length === 0
-                    : modalType === "places"
-                      ? !modalDayId || !placeSelections[modalDayId]
-                      : true
+                modalType === "cities" ? modalCitySelections.length === 0 : true
               }
             >
               {modalType === "cities" ? "Add selected" : "Add"}
