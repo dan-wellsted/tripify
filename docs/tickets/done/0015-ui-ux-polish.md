@@ -28,6 +28,7 @@ Align navigation and flows to the trip-centric dashboard model.
 ## Progress notes
 - Dashboard, trip detail, itinerary, and auth UI updated to match Wandr style.
 - City chips added to itinerary day headers (see `docs/tickets/done/0024-itinerary-city-chips.md`).
+- Day “Add item” flow added (see `docs/tickets/done/0025-day-add-item-flow.md`).
 
 ## Completion notes
 - Follow-up UX items moved into separate tickets (map, inspiration, admin library, visual direction, memories).
