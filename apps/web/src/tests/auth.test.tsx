@@ -21,10 +21,11 @@ function renderApp(initialEntries: string[]) {
 }
 
 function jsonResponse(body: unknown, status = 200) {
-  return Promise.resolve({
-    ok: status >= 200 && status < 300,
+  return new Response(JSON.stringify(body), {
     status,
-    json: () => Promise.resolve(body)
+    headers: {
+      "Content-Type": "application/json"
+    }
   });
 }
 
@@ -34,26 +35,35 @@ beforeEach(() => {
 
 describe("auth pages", () => {
   it("shows login error from API", async () => {
-    const fetchMock = vi.fn((input: RequestInfo) => {
-      if (input.toString().includes("/auth/me")) {
-        return jsonResponse({ error: { code: "UNAUTHORIZED", message: "No session" } }, 401);
-      }
-
-      if (input.toString().includes("/auth/login")) {
-        return jsonResponse(
-          { error: { code: "INVALID_CREDENTIALS", message: "Invalid email or password." } },
-          401
+    const fetchMock = vi.fn<Parameters<typeof fetch>, ReturnType<typeof fetch>>(
+      (input: Parameters<typeof fetch>[0]) => {
+      const requestUrl = input instanceof Request ? input.url : input.toString();
+      if (requestUrl.includes("/auth/me")) {
+        return Promise.resolve(
+          jsonResponse({ error: { code: "UNAUTHORIZED", message: "No session" } }, 401)
         );
       }
 
-      return jsonResponse({});
+      if (requestUrl.includes("/auth/login")) {
+        return Promise.resolve(
+          jsonResponse(
+            { error: { code: "INVALID_CREDENTIALS", message: "Invalid email or password." } },
+            401
+          )
+        );
+      }
+
+      return Promise.resolve(jsonResponse({}));
     });
 
-    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+    vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
 
     renderApp(["/login"]);
 
-    await userEvent.type(screen.getByLabelText(/email/i), "test@example.com");
+    await userEvent.type(
+      await screen.findByLabelText(/email/i),
+      "test@example.com"
+    );
     await userEvent.type(screen.getByLabelText(/password/i), "wrong");
     await userEvent.click(screen.getByRole("button", { name: /log in/i }));
 
@@ -63,33 +73,39 @@ describe("auth pages", () => {
   });
 
   it("submits register form", async () => {
-    const fetchMock = vi.fn((input: RequestInfo, init?: RequestInit) => {
-      if (input.toString().includes("/auth/me")) {
-        return jsonResponse({ error: { code: "UNAUTHORIZED", message: "No session" } }, 401);
+    const fetchMock = vi.fn<Parameters<typeof fetch>, ReturnType<typeof fetch>>(
+      (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      const requestUrl = input instanceof Request ? input.url : input.toString();
+      if (requestUrl.includes("/auth/me")) {
+        return Promise.resolve(
+          jsonResponse({ error: { code: "UNAUTHORIZED", message: "No session" } }, 401)
+        );
       }
 
-      if (input.toString().includes("/auth/register")) {
+      if (requestUrl.includes("/auth/register")) {
         const body = init?.body ? JSON.parse(init.body.toString()) : null;
-        return jsonResponse({
-          user: {
-            id: "user-1",
-            email: body.email,
-            name: body.name ?? null
-          },
-          session: {
-            id: "session-1"
-          }
-        });
+        return Promise.resolve(
+          jsonResponse({
+            user: {
+              id: "user-1",
+              email: body.email,
+              name: body.name ?? null
+            },
+            session: {
+              id: "session-1"
+            }
+          })
+        );
       }
 
-      return jsonResponse({});
+      return Promise.resolve(jsonResponse({}));
     });
 
-    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+    vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
 
     renderApp(["/register"]);
 
-    await userEvent.type(screen.getByLabelText(/name/i), "Test User");
+    await userEvent.type(await screen.findByLabelText(/name/i), "Test User");
     await userEvent.type(screen.getByLabelText(/email/i), "test@example.com");
     await userEvent.type(screen.getByLabelText(/password/i), "Password1234");
     await userEvent.click(screen.getByRole("button", { name: /sign up/i }));

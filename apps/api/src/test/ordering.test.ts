@@ -1,16 +1,20 @@
+import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import app from "./testApp.js";
 import prisma from "../lib/db.js";
 import { hashPassword } from "../lib/auth.js";
+import { resetTestDb, setupTestDb } from "./testDb.js";
 
 const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
 let databaseReady = false;
 
 async function createUser(email: string) {
+  const [local, domain] = email.split("@");
+  const uniqueEmail = `${local}+${randomUUID()}@${domain ?? "example.com"}`;
   return prisma.user.create({
     data: {
-      email,
+      email: uniqueEmail,
       passwordHash: await hashPassword("Password1234"),
       name: null
     }
@@ -33,14 +37,8 @@ describe("itinerary ordering", () => {
       return;
     }
 
-    try {
-      await prisma.$connect();
-      databaseReady = true;
-    } catch {
-      databaseReady = false;
-      // eslint-disable-next-line no-console
-      console.warn("[test] database not reachable, skipping ordering tests");
-    }
+    const { isReady } = await setupTestDb("ordering");
+    databaseReady = isReady;
   });
 
   beforeEach(async () => {
@@ -48,15 +46,7 @@ describe("itinerary ordering", () => {
       return;
     }
 
-    await prisma.tripDayActivity.deleteMany();
-    await prisma.tripDayCity.deleteMany();
-    await prisma.tripDayPlace.deleteMany();
-    await prisma.groupMember.deleteMany();
-    await prisma.group.deleteMany();
-    await prisma.tripDay.deleteMany();
-    await prisma.itinerary.deleteMany();
-    await prisma.trip.deleteMany();
-    await prisma.user.deleteMany();
+    await resetTestDb();
   });
 
   afterAll(async () => {

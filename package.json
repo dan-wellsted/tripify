@@ -24,7 +24,9 @@
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "test:ci": "CI=true pnpm -r test"
+    "test:ci": "CI=true pnpm -r test",
+    "test:db": "bash scripts/test-db.sh",
+    "test:api": "DATABASE_URL=$DATABASE_URL_TEST pnpm --filter @tripplanner/api test"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

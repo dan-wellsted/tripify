@@ -6,11 +6,12 @@
 - End-to-end is deferred until core flows stabilize.
 
 ## API
-- Requires a running Postgres and `DATABASE_URL` set (see `prisma/.env.example`).
-- Run migrations before tests: `pnpm --filter api prisma migrate dev`.
-- Run tests: `pnpm --filter api test`.
+- Requires a running Postgres and `DATABASE_URL_TEST` set (see `prisma/.env.example`).
+- API tests read `DATABASE_URL_TEST` and set `DATABASE_URL` automatically during Vitest runs.
+- Run migrations for tests: `pnpm test:db` (resets without seeding).
+- Run tests: `pnpm --filter api test` or `pnpm test:api`.
 - `pnpm test` runs all workspace tests; `pnpm test:ci` forces CI mode.
-- We intend to make DB-backed tests fail fast when DB is unavailable (tracked in 0013).
+- Tests will fail fast in CI or when `TEST_DB_REQUIRED=true` if the DB is unreachable.
 
 ## Web
 - Run tests: `pnpm --filter web test`.
