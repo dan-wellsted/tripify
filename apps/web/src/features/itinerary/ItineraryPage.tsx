@@ -2,13 +2,25 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
+  Checkbox,
   Heading,
   HStack,
+  Icon,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Select,
   Stack,
   Tag,
+  TagCloseButton,
   TagLabel,
-  Text
+  Text,
+  useDisclosure
 } from "@chakra-ui/react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 import type {
@@ -44,8 +56,19 @@ function formatDate(value: string) {
   return new Date(value).toLocaleDateString();
 }
 
-export default function ItineraryPage() {
-  const { tripId } = useParams();
+type ItineraryPageProps = {
+  tripId?: string;
+  showBackLink?: boolean;
+  showHeading?: boolean;
+};
+
+export default function ItineraryPage({
+  tripId,
+  showBackLink = true,
+  showHeading = true
+}: ItineraryPageProps) {
+  const { tripId: routeTripId } = useParams();
+  const resolvedTripId = tripId ?? routeTripId;
   const [days, setDays] = useState<TripDay[]>([]);
   const [activities, setActivities] = useState<ActivityWithPlace[]>([]);
   const [cities, setCities] = useState<City[]>([]);
@@ -62,15 +85,18 @@ export default function ItineraryPage() {
   const [activitySelections, setActivitySelections] = useState<
     Record<string, string>
   >({});
-  const [citySelections, setCitySelections] = useState<
-    Record<string, string>
-  >({});
   const [placeSelections, setPlaceSelections] = useState<
     Record<string, string>
   >({});
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingPlaces, setIsLoadingPlaces] = useState(true);
+  type DragType = "activities" | "cities" | "places";
   const [error, setError] = useState<string | null>(null);
+  const addItemDisclosure = useDisclosure();
+  const [modalDayId, setModalDayId] = useState<string | null>(null);
+  const [modalType, setModalType] = useState<DragType | null>(null);
+  const [modalCityQuery, setModalCityQuery] = useState("");
+  const [modalCitySelections, setModalCitySelections] = useState<string[]>([]);
   const sortedDays = useMemo(
     () =>
       [...days].sort((a, b) => {
@@ -100,7 +126,6 @@ export default function ItineraryPage() {
     return next.map((item, index) => ({ ...item, position: index }));
   };
 
-  type DragType = "activities" | "cities" | "places";
   const [dragging, setDragging] = useState<{
     dayId: string;
     type: DragType;
@@ -118,17 +143,27 @@ export default function ItineraryPage() {
     () => (Array.isArray(cities) ? cities : []),
     [cities]
   );
+  const filteredCities = useMemo(() => {
+    const normalized = modalCityQuery.trim().toLowerCase();
+    if (!normalized) {
+      return safeCities;
+    }
+
+    return safeCities.filter((city) =>
+      city.name.toLowerCase().includes(normalized)
+    );
+  }, [modalCityQuery, safeCities]);
 
   useEffect(() => {
     let isMounted = true;
 
     const load = async () => {
-      if (!tripId) {
+      if (!resolvedTripId) {
         return;
       }
 
       try {
-        const response = await listTripDays(tripId);
+        const response = await listTripDays(resolvedTripId);
         if (isMounted) {
           setDays(response);
           setError(null);
@@ -149,7 +184,7 @@ export default function ItineraryPage() {
     return () => {
       isMounted = false;
     };
-  }, [tripId]);
+  }, [resolvedTripId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -230,14 +265,14 @@ export default function ItineraryPage() {
     let isMounted = true;
 
     const loadDayPlaces = async () => {
-      if (!tripId || sortedDays.length === 0) {
+      if (!resolvedTripId || sortedDays.length === 0) {
         return;
       }
 
       try {
         const results = await Promise.all(
           sortedDays.map(async (day) => {
-            const response = await listTripDayPlaces(tripId, day.id);
+            const response = await listTripDayPlaces(resolvedTripId, day.id);
             return [day.id, response] as const;
           })
         );
@@ -265,20 +300,20 @@ export default function ItineraryPage() {
     return () => {
       isMounted = false;
     };
-  }, [tripId, sortedDays]);
+  }, [resolvedTripId, sortedDays]);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadDayActivities = async () => {
-      if (!tripId || sortedDays.length === 0) {
+      if (!resolvedTripId || sortedDays.length === 0) {
         return;
       }
 
       try {
         const results = await Promise.all(
           sortedDays.map(async (day) => {
-            const response = await listTripDayActivities(tripId, day.id);
+            const response = await listTripDayActivities(resolvedTripId, day.id);
             return [day.id, response] as const;
           })
         );
@@ -305,20 +340,20 @@ export default function ItineraryPage() {
     return () => {
       isMounted = false;
     };
-  }, [tripId, sortedDays]);
+  }, [resolvedTripId, sortedDays]);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadDayCities = async () => {
-      if (!tripId || sortedDays.length === 0) {
+      if (!resolvedTripId || sortedDays.length === 0) {
         return;
       }
 
       try {
         const results = await Promise.all(
           sortedDays.map(async (day) => {
-            const response = await listTripDayCities(tripId, day.id);
+            const response = await listTripDayCities(resolvedTripId, day.id);
             return [day.id, response] as const;
           })
         );
@@ -346,10 +381,10 @@ export default function ItineraryPage() {
     return () => {
       isMounted = false;
     };
-  }, [tripId, sortedDays]);
+  }, [resolvedTripId, sortedDays]);
 
   const handleAddActivity = async (dayId: string) => {
-    if (!tripId) {
+    if (!resolvedTripId) {
       return;
     }
 
@@ -359,7 +394,7 @@ export default function ItineraryPage() {
     }
 
     try {
-      const created = await addTripDayActivity(tripId, dayId, { activityId });
+      const created = await addTripDayActivity(resolvedTripId, dayId, { activityId });
       setDayActivities((current) => ({
         ...current,
         [dayId]: [...(current[dayId] ?? []), created].sort(
@@ -375,12 +410,12 @@ export default function ItineraryPage() {
     dayId: string,
     dayActivityId: string
   ) => {
-    if (!tripId) {
+    if (!resolvedTripId) {
       return;
     }
 
     try {
-      await deleteTripDayActivity(tripId, dayId, dayActivityId);
+      await deleteTripDayActivity(resolvedTripId, dayId, dayActivityId);
       setDayActivities((current) => ({
         ...current,
         [dayId]: (current[dayId] ?? []).filter(
@@ -416,8 +451,8 @@ export default function ItineraryPage() {
         [dayId]: next
       }));
 
-      if (tripId) {
-        void reorderTripDayActivities(tripId, dayId, {
+      if (resolvedTripId) {
+        void reorderTripDayActivities(resolvedTripId, dayId, {
           orderedIds: next.map((item) => item.id)
         });
       }
@@ -430,8 +465,8 @@ export default function ItineraryPage() {
         [dayId]: next
       }));
 
-      if (tripId) {
-        void reorderTripDayCities(tripId, dayId, {
+      if (resolvedTripId) {
+        void reorderTripDayCities(resolvedTripId, dayId, {
           orderedIds: next.map((item) => item.id)
         });
       }
@@ -444,8 +479,8 @@ export default function ItineraryPage() {
         [dayId]: next
       }));
 
-      if (tripId) {
-        void reorderTripDayPlaces(tripId, dayId, {
+      if (resolvedTripId) {
+        void reorderTripDayPlaces(resolvedTripId, dayId, {
           orderedIds: next.map((item) => item.id)
         });
       }
@@ -455,35 +490,44 @@ export default function ItineraryPage() {
   };
 
   const handleAddCity = async (dayId: string) => {
-    if (!tripId) {
-      return;
-    }
-
-    const cityId = citySelections[dayId];
-    if (!cityId) {
+    if (!resolvedTripId) {
       return;
     }
 
     try {
-      const created = await addTripDayCity(tripId, dayId, { cityId });
-      setDayCities((current) => ({
-        ...current,
-        [dayId]: [...(current[dayId] ?? []), created].sort(
-          (a, b) => a.position - b.position
-        )
-      }));
+      const existingCityIds = new Set(
+        (dayCities[dayId] ?? []).map((entry) => entry.cityId)
+      );
+      const selected = modalCitySelections.filter(
+        (cityId) => !existingCityIds.has(cityId)
+      );
+      const created: TripDayCityWithCity[] = [];
+
+      for (const cityId of selected) {
+        const entry = await addTripDayCity(resolvedTripId, dayId, { cityId });
+        created.push(entry);
+      }
+
+      if (created.length > 0) {
+        setDayCities((current) => ({
+          ...current,
+          [dayId]: [...(current[dayId] ?? []), ...created].sort(
+            (a, b) => a.position - b.position
+          )
+        }));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to add city");
     }
   };
 
   const handleRemoveCity = async (dayId: string, dayCityId: string) => {
-    if (!tripId) {
+    if (!resolvedTripId) {
       return;
     }
 
     try {
-      await deleteTripDayCity(tripId, dayId, dayCityId);
+      await deleteTripDayCity(resolvedTripId, dayId, dayCityId);
       setDayCities((current) => ({
         ...current,
         [dayId]: (current[dayId] ?? []).filter(
@@ -496,7 +540,7 @@ export default function ItineraryPage() {
   };
 
   const handleAddPlace = async (dayId: string) => {
-    if (!tripId) {
+    if (!resolvedTripId) {
       return;
     }
 
@@ -506,7 +550,7 @@ export default function ItineraryPage() {
     }
 
     try {
-      const created = await addTripDayPlace(tripId, dayId, { placeId });
+      const created = await addTripDayPlace(resolvedTripId, dayId, { placeId });
       setDayPlaces((current) => ({
         ...current,
         [dayId]: [...(current[dayId] ?? []), created].sort(
@@ -519,12 +563,12 @@ export default function ItineraryPage() {
   };
 
   const handleRemovePlace = async (dayId: string, dayPlaceId: string) => {
-    if (!tripId) {
+    if (!resolvedTripId) {
       return;
     }
 
     try {
-      await deleteTripDayPlace(tripId, dayId, dayPlaceId);
+      await deleteTripDayPlace(resolvedTripId, dayId, dayPlaceId);
       setDayPlaces((current) => ({
         ...current,
         [dayId]: (current[dayId] ?? []).filter(
@@ -536,23 +580,72 @@ export default function ItineraryPage() {
     }
   };
 
+  const containerMaxW = showBackLink || showHeading ? "840px" : "100%";
+  const containerMx = showBackLink || showHeading ? "auto" : "0";
+  const pinPath =
+    "M12 2C8.686 2 6 4.686 6 8c0 4.5 6 12 6 12s6-7.5 6-12c0-3.314-2.686-6-6-6zm0 8.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z";
+  const starPath =
+    "m12 2 2.8 6.1 6.7.6-5 4.4 1.5 6.6L12 16.9 6 19.7l1.5-6.6-5-4.4 6.7-.6L12 2z";
+
+  const openAddModal = (type: DragType, dayId: string) => {
+    setModalType(type);
+    setModalDayId(dayId);
+    if (type === "cities") {
+      setModalCityQuery("");
+      setModalCitySelections([]);
+    }
+    addItemDisclosure.onOpen();
+  };
+
+  const closeAddModal = () => {
+    addItemDisclosure.onClose();
+    setModalDayId(null);
+    setModalType(null);
+    setModalCityQuery("");
+    setModalCitySelections([]);
+  };
+
+  const handleModalAdd = async () => {
+    if (!modalDayId || !modalType) {
+      return;
+    }
+
+    if (modalType === "activities") {
+      await handleAddActivity(modalDayId);
+    }
+    if (modalType === "cities") {
+      await handleAddCity(modalDayId);
+    }
+    if (modalType === "places") {
+      await handleAddPlace(modalDayId);
+    }
+
+    closeAddModal();
+  };
+
+  const modalTitle =
+    modalType === "activities"
+      ? "Add activity"
+      : modalType === "cities"
+        ? "Add city"
+        : modalType === "places"
+          ? "Add place"
+          : "Add item";
+
+  const modalExistingCityIds = modalDayId
+    ? new Set((dayCities[modalDayId] ?? []).map((entry) => entry.cityId))
+    : new Set<string>();
+
   return (
-    <Stack spacing={8} maxW="840px" mx="auto">
-      <Stack direction={{ base: "column", sm: "row" }} spacing={3}>
-        <Button as={RouterLink} to={`/trips/${tripId ?? ""}`} variant="ghost">
-          Back to trip
-        </Button>
-        <Button as={RouterLink} to="/places" variant="outline">
-          Manage places
-        </Button>
-        <Button as={RouterLink} to="/cities" variant="outline">
-          Manage cities
-        </Button>
-        <Button as={RouterLink} to="/activities" variant="outline">
-          Manage activities
-        </Button>
-      </Stack>
-      <Heading size="lg">Itinerary</Heading>
+    <Stack spacing={8} maxW={containerMaxW} mx={containerMx}>
+      {showBackLink && resolvedTripId ? (
+        <Stack direction={{ base: "column", sm: "row" }} spacing={3}>
+          <Button as={RouterLink} to={`/trips/${resolvedTripId}`} variant="ghost">
+            Back to trip
+          </Button>
+        </Stack>
+      ) : null}
+      {showHeading ? <Heading size="lg">Itinerary</Heading> : null}
       {error ? (
         <Box bg="white" p={{ base: 6, md: 8 }} rounded="lg" shadow="md">
           <Text color="red.500">{error}</Text>
@@ -568,17 +661,113 @@ export default function ItineraryPage() {
           </Text>
         ) : null}
         {sortedDays.map((day) => (
-          <Box key={day.id} bg="white" p={4} rounded="md" shadow="sm">
-            <Stack spacing={2}>
-              <Heading size="sm">Day {day.position + 1}</Heading>
-              <Text color="gray.700">{formatDate(day.date)}</Text>
-              <Text color="gray.500">
-                {day.title || "No title"}
-              </Text>
+          <Box
+            key={day.id}
+            bg="white"
+            p={{ base: 4, md: 6 }}
+            rounded="2xl"
+            shadow="sm"
+            border="1px solid"
+            borderColor="orange.100"
+          >
+            <Stack spacing={4}>
+              <HStack spacing={3} align="center" justify="space-between">
+                <HStack spacing={3} align="flex-start">
+                  <Box
+                    bg="orange.400"
+                    color="white"
+                    w="40px"
+                    h="40px"
+                    rounded="full"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    fontWeight="bold"
+                  >
+                    {day.position + 1}
+                  </Box>
+                  <Stack spacing={1}>
+                    <Heading size="sm">{day.title || `Day ${day.position + 1}`}</Heading>
+                    <Text color="gray.600" fontSize="sm">
+                      {formatDate(day.date)}
+                    </Text>
+                  </Stack>
+                </HStack>
+                <HStack
+                  spacing={2}
+                  align="center"
+                  justify="flex-end"
+                  flex="1"
+                  minW={0}
+                  overflowX="auto"
+                >
+                  <Text fontSize="xs" color="gray.500" whiteSpace="nowrap">
+                    Cities
+                  </Text>
+                  {(dayCities[day.id] ?? []).length === 0 ? (
+                    <Text fontSize="sm" color="gray.500" whiteSpace="nowrap">
+                      No cities yet.
+                    </Text>
+                  ) : (
+                    (dayCities[day.id] ?? []).map((entry) => (
+                      <Tag
+                        key={entry.id}
+                        size="sm"
+                        colorScheme="teal"
+                        draggable
+                        onDragStart={() =>
+                          setDragging({
+                            dayId: day.id,
+                            type: "cities",
+                            itemId: entry.id
+                          })
+                        }
+                        onDragEnd={() => setDragging(null)}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={() => handleDrop("cities", day.id, entry.id)}
+                        whiteSpace="nowrap"
+                      >
+                        <TagLabel>
+                          <HStack spacing={1}>
+                            <Icon viewBox="0 0 24 24" boxSize={3} color="teal.600">
+                              <path fill="currentColor" d={pinPath} />
+                            </Icon>
+                            <Text>{entry.city.name}</Text>
+                          </HStack>
+                        </TagLabel>
+                        <TagCloseButton
+                          onClick={() => void handleRemoveCity(day.id, entry.id)}
+                        />
+                      </Tag>
+                    ))
+                  )}
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    borderStyle="dashed"
+                    onClick={() => openAddModal("cities", day.id)}
+                    isDisabled={safeCities.length === 0}
+                    whiteSpace="nowrap"
+                  >
+                    + Add city
+                  </Button>
+                </HStack>
+              </HStack>
               <Stack spacing={2} pt={2}>
-                <Heading size="xs" color="gray.600">
-                  Activities
-                </Heading>
+                <HStack justify="space-between">
+                  <Heading size="xs" color="gray.600">
+                    Activities
+                  </Heading>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    borderStyle="dashed"
+                    onClick={() => openAddModal("activities", day.id)}
+                    isDisabled={safeActivities.length === 0}
+                  >
+                    + Add activity
+                  </Button>
+                </HStack>
                 {(dayActivities[day.id] ?? []).length === 0 ? (
                   <Text color="gray.500" fontSize="sm">
                     No activities added yet.
@@ -601,10 +790,13 @@ export default function ItineraryPage() {
                       onDragOver={(event) => event.preventDefault()}
                       onDrop={() => handleDrop("activities", day.id, entry.id)}
                     >
-                      <Stack spacing={1}>
-                        <Text fontWeight="semibold">
-                          {entry.activity.title}
-                        </Text>
+                      <Stack spacing={1} flex="1">
+                        <HStack spacing={2}>
+                          <Icon viewBox="0 0 24 24" boxSize={4} color="orange.400">
+                            <path fill="currentColor" d={starPath} />
+                          </Icon>
+                          <Text fontWeight="semibold">{entry.activity.title}</Text>
+                        </HStack>
                         {entry.activity.startTime || entry.activity.endTime ? (
                           <Text fontSize="sm" color="gray.500">
                             {formatZonedTime(
@@ -642,122 +834,27 @@ export default function ItineraryPage() {
                     </HStack>
                   ))
                 )}
-                <HStack>
-                  <Select
-                    placeholder="Select an activity"
-                    value={activitySelections[day.id] ?? ""}
-                    onChange={(event) =>
-                      setActivitySelections((current) => ({
-                        ...current,
-                        [day.id]: event.target.value
-                      }))
-                    }
-                    isDisabled={safeActivities.length === 0}
-                  >
-                    {safeActivities.map((activity) => (
-                      <option key={activity.id} value={activity.id}>
-                        {activity.title}
-                      </option>
-                    ))}
-                  </Select>
-                  <Button
-                    size="sm"
-                    colorScheme="blue"
-                    onClick={() => void handleAddActivity(day.id)}
-                    isDisabled={!activitySelections[day.id]}
-                  >
-                    Add
-                  </Button>
-                </HStack>
                 {safeActivities.length === 0 ? (
                   <Text fontSize="sm" color="gray.500">
-                    Add activities in your library to attach them here.
+                    No activities available yet.
                   </Text>
                 ) : null}
               </Stack>
               <Stack spacing={2} pt={2}>
-                <Heading size="xs" color="gray.600">
-                  Cities
-                </Heading>
-                {(dayCities[day.id] ?? []).length === 0 ? (
-                  <Text color="gray.500" fontSize="sm">
-                    No cities added yet.
-                  </Text>
-                ) : (
-                  (dayCities[day.id] ?? []).map((entry) => (
-                    <HStack
-                      key={entry.id}
-                      justify="space-between"
-                      align="center"
-                      draggable
-                      onDragStart={() =>
-                        setDragging({
-                          dayId: day.id,
-                          type: "cities",
-                          itemId: entry.id
-                        })
-                      }
-                      onDragEnd={() => setDragging(null)}
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={() => handleDrop("cities", day.id, entry.id)}
-                    >
-                      <Stack spacing={1}>
-                        <Tag size="sm" colorScheme="teal" alignSelf="flex-start">
-                          <TagLabel>{entry.city.name}</TagLabel>
-                        </Tag>
-                        <Text fontSize="sm" color="gray.500">
-                          {[entry.city.region, entry.city.country]
-                            .filter(Boolean)
-                            .join(", ") || "No region"}
-                        </Text>
-                      </Stack>
-                      <Button
-                        size="xs"
-                        variant="ghost"
-                        onClick={() => void handleRemoveCity(day.id, entry.id)}
-                      >
-                        Remove
-                      </Button>
-                    </HStack>
-                  ))
-                )}
-                <HStack>
-                  <Select
-                    placeholder="Select a city"
-                    value={citySelections[day.id] ?? ""}
-                    onChange={(event) =>
-                      setCitySelections((current) => ({
-                        ...current,
-                        [day.id]: event.target.value
-                      }))
-                    }
-                    isDisabled={safeCities.length === 0}
-                  >
-                    {safeCities.map((city) => (
-                      <option key={city.id} value={city.id}>
-                        {city.name}
-                      </option>
-                    ))}
-                  </Select>
+                <HStack justify="space-between">
+                  <Heading size="xs" color="gray.600">
+                    Places
+                  </Heading>
                   <Button
-                    size="sm"
-                    colorScheme="blue"
-                    onClick={() => void handleAddCity(day.id)}
-                    isDisabled={!citySelections[day.id]}
+                    size="xs"
+                    variant="outline"
+                    borderStyle="dashed"
+                    onClick={() => openAddModal("places", day.id)}
+                    isDisabled={isLoadingPlaces || safePlaces.length === 0}
                   >
-                    Add
+                    + Add place
                   </Button>
                 </HStack>
-                {safeCities.length === 0 ? (
-                  <Text fontSize="sm" color="gray.500">
-                    Add cities to your library to attach them here.
-                  </Text>
-                ) : null}
-              </Stack>
-              <Stack spacing={2} pt={2}>
-                <Heading size="xs" color="gray.600">
-                  Places
-                </Heading>
                 {(dayPlaces[day.id] ?? []).length === 0 ? (
                   <Text color="gray.500" fontSize="sm">
                     No places added yet.
@@ -780,10 +877,13 @@ export default function ItineraryPage() {
                       onDragOver={(event) => event.preventDefault()}
                       onDrop={() => handleDrop("places", day.id, entry.id)}
                     >
-                      <Stack spacing={0}>
-                        <Text fontWeight="semibold">
-                          {entry.place.name}
-                        </Text>
+                      <Stack spacing={0} flex="1">
+                        <HStack spacing={2}>
+                          <Icon viewBox="0 0 24 24" boxSize={4} color="orange.400">
+                            <path fill="currentColor" d={pinPath} />
+                          </Icon>
+                          <Text fontWeight="semibold">{entry.place.name}</Text>
+                        </HStack>
                         <Text fontSize="sm" color="gray.500">
                           {entry.place.address || "No address"}
                         </Text>
@@ -798,38 +898,9 @@ export default function ItineraryPage() {
                     </HStack>
                   ))
                 )}
-                <HStack>
-                  <Select
-                    placeholder={
-                      isLoadingPlaces ? "Loading places..." : "Select a place"
-                    }
-                    value={placeSelections[day.id] ?? ""}
-                    onChange={(event) =>
-                      setPlaceSelections((current) => ({
-                        ...current,
-                        [day.id]: event.target.value
-                      }))
-                    }
-                    isDisabled={isLoadingPlaces || safePlaces.length === 0}
-                  >
-                    {safePlaces.map((place) => (
-                      <option key={place.id} value={place.id}>
-                        {place.name}
-                      </option>
-                    ))}
-                  </Select>
-                  <Button
-                    size="sm"
-                    colorScheme="blue"
-                    onClick={() => void handleAddPlace(day.id)}
-                    isDisabled={!placeSelections[day.id]}
-                  >
-                    Add
-                  </Button>
-                </HStack>
                 {!isLoadingPlaces && safePlaces.length === 0 ? (
                   <Text fontSize="sm" color="gray.500">
-                    Add places in your library to attach them here.
+                    No places available yet.
                   </Text>
                 ) : null}
               </Stack>
@@ -837,6 +908,114 @@ export default function ItineraryPage() {
           </Box>
         ))}
       </Stack>
+
+      <Modal isOpen={addItemDisclosure.isOpen} onClose={closeAddModal}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{modalTitle}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {modalType === "activities" ? (
+              <Select
+                placeholder="Select an activity"
+                value={
+                  modalDayId ? activitySelections[modalDayId] ?? "" : ""
+                }
+                onChange={(event) =>
+                  setActivitySelections((current) => ({
+                    ...current,
+                    ...(modalDayId ? { [modalDayId]: event.target.value } : {})
+                  }))
+                }
+                isDisabled={safeActivities.length === 0}
+              >
+                {safeActivities.map((activity) => (
+                  <option key={activity.id} value={activity.id}>
+                    {activity.title}
+                  </option>
+                ))}
+              </Select>
+            ) : null}
+            {modalType === "cities" ? (
+              <Stack spacing={3}>
+                <Input
+                  placeholder="Search cities..."
+                  value={modalCityQuery}
+                  onChange={(event) => setModalCityQuery(event.target.value)}
+                />
+                <Stack spacing={2} maxH="260px" overflowY="auto">
+                  {filteredCities.length === 0 ? (
+                    <Text fontSize="sm" color="gray.500">
+                      No cities found.
+                    </Text>
+                  ) : (
+                    filteredCities.map((city) => {
+                      const isSelected = modalCitySelections.includes(city.id);
+                      const isExisting = modalExistingCityIds.has(city.id);
+                      return (
+                        <Checkbox
+                          key={city.id}
+                          isChecked={isSelected}
+                          isDisabled={isExisting}
+                          onChange={(event) => {
+                            setModalCitySelections((current) => {
+                              if (event.target.checked) {
+                                return [...current, city.id];
+                              }
+                              return current.filter((id) => id !== city.id);
+                            });
+                          }}
+                        >
+                          {city.name}
+                        </Checkbox>
+                      );
+                    })
+                  )}
+                </Stack>
+              </Stack>
+            ) : null}
+            {modalType === "places" ? (
+              <Select
+                placeholder={isLoadingPlaces ? "Loading places..." : "Select a place"}
+                value={modalDayId ? placeSelections[modalDayId] ?? "" : ""}
+                onChange={(event) =>
+                  setPlaceSelections((current) => ({
+                    ...current,
+                    ...(modalDayId ? { [modalDayId]: event.target.value } : {})
+                  }))
+                }
+                isDisabled={isLoadingPlaces || safePlaces.length === 0}
+              >
+                {safePlaces.map((place) => (
+                  <option key={place.id} value={place.id}>
+                    {place.name}
+                  </option>
+                ))}
+              </Select>
+            ) : null}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={closeAddModal}>
+              Cancel
+            </Button>
+            <Button
+              colorScheme="orange"
+              onClick={() => void handleModalAdd()}
+              isDisabled={
+                modalType === "activities"
+                  ? !modalDayId || !activitySelections[modalDayId]
+                  : modalType === "cities"
+                    ? modalCitySelections.length === 0
+                    : modalType === "places"
+                      ? !modalDayId || !placeSelections[modalDayId]
+                      : true
+              }
+            >
+              {modalType === "cities" ? "Add selected" : "Add"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Stack>
   );
 }

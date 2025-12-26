@@ -1,8 +1,13 @@
 import { PrismaClient } from "@prisma/client";
+import { createRequire } from "node:module";
 
 const prisma = new PrismaClient();
 
-const ownerId = "cmjh978w100004p1yrhccy4xf";
+const seedEmail = "test@test.com";
+const seedPassword = "Password1234";
+
+const require = createRequire(new URL("../apps/api/package.json", import.meta.url));
+const bcrypt = require("bcryptjs");
 
 const cities = [
   {
@@ -57,6 +62,17 @@ const cities = [
 ];
 
 async function main() {
+  const passwordHash = bcrypt.hashSync(seedPassword, 12);
+  const owner = await prisma.user.upsert({
+    where: { email: seedEmail },
+    update: { name: "Test User", passwordHash },
+    create: {
+      email: seedEmail,
+      name: "Test User",
+      passwordHash
+    }
+  });
+
   for (const city of cities) {
     await prisma.city.upsert({
       where: {
@@ -79,7 +95,7 @@ async function main() {
     update: {},
     create: {
       id: "seed-trip-japan",
-      ownerId,
+      ownerId: owner.id,
       title: "Japan Highlights",
       description: "Seeded trip with cities, places, and activities.",
       startDate: new Date("2025-04-10T00:00:00.000Z"),
@@ -164,7 +180,7 @@ async function main() {
       update: {},
       create: {
         id: "seed-place-shibuya",
-        ownerId,
+        ownerId: owner.id,
         name: "Shibuya Crossing",
         description: "Iconic Tokyo intersection.",
         address: "Shibuya City, Tokyo",
@@ -177,7 +193,7 @@ async function main() {
       update: {},
       create: {
         id: "seed-place-fushimi",
-        ownerId,
+        ownerId: owner.id,
         name: "Fushimi Inari Taisha",
         description: "Famed torii gates shrine.",
         address: "Fushimi Ward, Kyoto",
@@ -203,7 +219,7 @@ async function main() {
     update: {},
     create: {
       id: "seed-activity-tour",
-      ownerId,
+      ownerId: owner.id,
       placeId: fushimi.id,
       title: "Sunrise shrine walk",
       description: "Early walk through the torii gates.",

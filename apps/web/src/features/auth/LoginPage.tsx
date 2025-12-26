@@ -46,10 +46,25 @@ export default function LoginPage() {
   };
 
   return (
-    <Box maxW="420px" mx="auto" mt={12} p={8} bg="white" rounded="lg" shadow="md">
+    <Box
+      maxW="460px"
+      mx="auto"
+      mt={12}
+      p={{ base: 6, md: 8 }}
+      bg="white"
+      rounded="2xl"
+      shadow="sm"
+      border="1px solid"
+      borderColor="orange.100"
+    >
       <Stack spacing={4} as="form" onSubmit={handleSubmit}>
-        <Heading size="lg">Welcome back</Heading>
-        <Text color="gray.600">Log in to continue planning your trips.</Text>
+        <Stack spacing={1}>
+          <Text fontSize="sm" color="orange.500" fontWeight="semibold">
+            Welcome back
+          </Text>
+          <Heading size="lg">Log in to Wandr</Heading>
+          <Text color="gray.600">Continue planning your next adventure.</Text>
+        </Stack>
         {error ? <Text color="red.500">{error}</Text> : null}
         <FormControl isRequired>
           <FormLabel>Email</FormLabel>
@@ -57,6 +72,7 @@ export default function LoginPage() {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            borderRadius="full"
           />
         </FormControl>
         <FormControl isRequired>
@@ -65,14 +81,15 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+            borderRadius="full"
           />
         </FormControl>
-        <Button type="submit" colorScheme="blue" isLoading={isSubmitting}>
+        <Button type="submit" variant="gradient" isLoading={isSubmitting}>
           Log in
         </Button>
         <Text fontSize="sm" color="gray.600">
           Need an account?{" "}
-          <Button variant="link" colorScheme="blue" as={RouterLink} to="/register">
+          <Button variant="link" colorScheme="orange" as={RouterLink} to="/register">
             Create one
           </Button>
         </Text>
