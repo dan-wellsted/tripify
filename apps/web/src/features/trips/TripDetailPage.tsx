@@ -2,13 +2,18 @@ import { useEffect, useState } from "react";
 import {
   Box,
   Button,
+  FormControl,
+  FormLabel,
   Heading,
+  Select,
   Stack,
   Text
 } from "@chakra-ui/react";
 import { Link as RouterLink, useParams } from "react-router-dom";
-import type { Trip } from "@tripplanner/shared";
-import { getTrip } from "../../api/trips";
+import type { Group, Trip } from "@tripplanner/shared";
+import { getTrip, updateTrip } from "../../api/trips";
+import { listGroups } from "../../api/groups";
+import { ApiError } from "../../api/client";
 
 function formatDate(value: string | null) {
   if (!value) {
@@ -21,6 +26,9 @@ function formatDate(value: string | null) {
 export default function TripDetailPage() {
   const { tripId } = useParams();
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(true);
+  const [isUpdatingGroup, setIsUpdatingGroup] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,6 +58,58 @@ export default function TripDetailPage() {
       isMounted = false;
     };
   }, [tripId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadGroups = async () => {
+      try {
+        const response = await listGroups();
+        if (isMounted) {
+          setGroups(response);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Unable to load groups");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingGroups(false);
+        }
+      }
+    };
+
+    void loadGroups();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleGroupChange = async (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    if (!trip) {
+      return;
+    }
+
+    const nextGroupId = event.target.value || null;
+    setIsUpdatingGroup(true);
+    setError(null);
+
+    try {
+      const updated = await updateTrip(trip.id, { groupId: nextGroupId });
+      setTrip(updated);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Unable to update group.");
+      }
+    } finally {
+      setIsUpdatingGroup(false);
+    }
+  };
 
   return (
     <Stack spacing={6} maxW="720px" mx="auto">
@@ -81,6 +141,21 @@ export default function TripDetailPage() {
               {trip.startDate || trip.endDate ? " – " : ""}
               {formatDate(trip.endDate)}
             </Text>
+            <FormControl>
+              <FormLabel>Group</FormLabel>
+              <Select
+                value={trip.groupId ?? ""}
+                onChange={handleGroupChange}
+                isDisabled={isLoadingGroups || isUpdatingGroup}
+              >
+                <option value="">No group</option>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
+                  </option>
+                ))}
+              </Select>
+            </FormControl>
           </Stack>
         </Box>
       ) : null}

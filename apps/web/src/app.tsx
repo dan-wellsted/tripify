@@ -24,6 +24,7 @@ import ItineraryPage from "./features/itinerary/ItineraryPage";
 import PlacesPage from "./features/places/PlacesPage";
 import CitiesPage from "./features/cities/CitiesPage";
 import ActivitiesPage from "./features/activities/ActivitiesPage";
+import GroupsPage from "./features/groups/GroupsPage";
 
 export default function App() {
   const { user, isLoading, logout, error } = useAuth();
@@ -78,6 +79,9 @@ export default function App() {
               </Button>
               <Button as={RouterLink} to="/activities" variant="ghost" size="sm">
                 Activities
+              </Button>
+              <Button as={RouterLink} to="/groups" variant="ghost" size="sm">
+                Groups
               </Button>
               <Text color="gray.700" fontSize="sm">
                 {user.name ?? user.email}
@@ -153,6 +157,10 @@ export default function App() {
         <Route
           path="/activities"
           element={requireAuth(<ActivitiesPage />)}
+        />
+        <Route
+          path="/groups"
+          element={requireAuth(<GroupsPage />)}
         />
         <Route
           path="/login"

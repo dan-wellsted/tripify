@@ -39,7 +39,7 @@ Think Wanderlog-style planning: trips, itineraries, places, activities.
 
 ## Local dev checklist
 - `pnpm install`
+- Start Postgres locally and create the database referenced by `DATABASE_URL`
 - Create `prisma/.env` from `prisma/.env.example`
 - `pnpm --filter api prisma migrate dev`
-- `pnpm --filter api dev`
-- `pnpm --filter web dev`
+- `pnpm dev` (or run `pnpm --filter api dev` and `pnpm --filter web dev` in separate terminals)

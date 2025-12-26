@@ -6,6 +6,7 @@ import itineraryRoutes from "./modules/itineraries/routes.js";
 import placeRoutes from "./modules/places/routes.js";
 import cityRoutes from "./modules/cities/routes.js";
 import activityRoutes from "./modules/activities/routes.js";
+import groupRoutes from "./modules/groups/routes.js";
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use(itineraryRoutes);
 router.use(placeRoutes);
 router.use(cityRoutes);
 router.use(activityRoutes);
+router.use(groupRoutes);
 
 export default router;
