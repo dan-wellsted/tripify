@@ -2,6 +2,7 @@ import type { Response } from "express";
 
 export type ErrorCode =
   | "CONFLICT"
+  | "FORBIDDEN"
   | "INTERNAL_ERROR"
   | "INVALID_CREDENTIALS"
   | "NOT_FOUND"

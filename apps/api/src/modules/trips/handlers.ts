@@ -160,11 +160,35 @@ export async function updateTripHandler(req: Request, res: Response) {
     startDate,
     endDate,
     startDateTimeZone,
-    endDateTimeZone
+    endDateTimeZone,
+    groupId
   } = result.data;
   if ((startDate && !endDate) || (!startDate && endDate)) {
     return sendError(res, 400, "VALIDATION_ERROR", "Provide both startDate and endDate.");
   }
+
+  if (groupId !== undefined) {
+    if (existing.ownerId !== userId) {
+      return sendError(res, 403, "FORBIDDEN", "Not authorized.");
+    }
+
+    if (groupId !== null) {
+      const group = await prisma.group.findFirst({
+        where: {
+          id: groupId,
+          OR: [
+            { ownerId: userId },
+            { members: { some: { userId } } }
+          ]
+        }
+      });
+
+      if (!group) {
+        return sendError(res, 404, "NOT_FOUND", "Group not found.");
+      }
+    }
+  }
+
   const updated = await prisma.trip.update({
     where: { id: existing.id },
     data: {
@@ -173,7 +197,8 @@ export async function updateTripHandler(req: Request, res: Response) {
       startDate: startDate ? new Date(startDate) : existing.startDate,
       endDate: endDate ? new Date(endDate) : existing.endDate,
       startDateTimeZone: startDateTimeZone ?? existing.startDateTimeZone,
-      endDateTimeZone: endDateTimeZone ?? existing.endDateTimeZone
+      endDateTimeZone: endDateTimeZone ?? existing.endDateTimeZone,
+      ...(groupId !== undefined ? { groupId } : {})
     }
   });
 

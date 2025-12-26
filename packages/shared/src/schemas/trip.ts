@@ -72,6 +72,10 @@ const tripInputSchema = z.object({
   endDateTimeZone: z.string().max(64).optional()
 });
 
+const tripGroupInputSchema = z.object({
+  groupId: z.string().nullable().optional()
+});
+
 export const createTripSchema = tripInputSchema.superRefine(
   ({ startDate, endDate, startDateTimeZone, endDateTimeZone }, ctx) => {
     validateDateRange(startDate, endDate, ctx);
@@ -87,10 +91,11 @@ export const createTripSchema = tripInputSchema.superRefine(
 
 export const updateTripSchema = tripInputSchema
   .partial()
+  .merge(tripGroupInputSchema)
   .superRefine(
     ({ startDate, endDate, startDateTimeZone, endDateTimeZone }, ctx) => {
-    validateDateRange(startDate, endDate, ctx);
-      validateTimeZones(
+      validateDateRange(startDate, endDate, ctx);
+        validateTimeZones(
         startDate,
         endDate,
         startDateTimeZone,
