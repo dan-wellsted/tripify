@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import app from "./testApp.js";
 import prisma from "../lib/db.js";
 import { hashPassword } from "../lib/auth.js";
-import { setupTestDb } from "./testDb.js";
+import { resetTestDb, setupTestDb } from "./testDb.js";
 
 const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
 let databaseReady = false;
@@ -33,7 +33,7 @@ describe("auth", () => {
       return;
     }
 
-    await prisma.user.deleteMany();
+    await resetTestDb();
   });
 
   afterAll(async () => {

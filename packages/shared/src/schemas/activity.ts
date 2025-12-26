@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { placeSchema } from "./place.js";
 
 const isoDateSchema = z.string().datetime().optional();

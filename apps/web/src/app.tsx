@@ -157,25 +157,13 @@ export default function App() {
         <Route
           path="/login"
           element={
-            isLoading ? (
-              <Text>Loading session…</Text>
-            ) : user ? (
-              <Navigate to="/" replace />
-            ) : (
-              <LoginPage />
-            )
+            user ? <Navigate to="/" replace /> : <LoginPage />
           }
         />
         <Route
           path="/register"
           element={
-            isLoading ? (
-              <Text>Loading session…</Text>
-            ) : user ? (
-              <Navigate to="/" replace />
-            ) : (
-              <RegisterPage />
-            )
+            user ? <Navigate to="/" replace /> : <RegisterPage />
           }
         />
       </Routes>

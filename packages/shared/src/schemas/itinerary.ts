@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { activityWithPlaceSchema } from "./activity.js";
 import { citySchema } from "./city.js";
 import { placeSchema } from "./place.js";

@@ -1,17 +1,20 @@
+import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import app from "./testApp.js";
 import prisma from "../lib/db.js";
 import { hashPassword } from "../lib/auth.js";
-import { setupTestDb } from "./testDb.js";
+import { resetTestDb, setupTestDb } from "./testDb.js";
 
 const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
 let databaseReady = false;
 
 async function createUser(email: string) {
+  const [local, domain] = email.split("@");
+  const uniqueEmail = `${local}+${randomUUID()}@${domain ?? "example.com"}`;
   return prisma.user.create({
     data: {
-      email,
+      email: uniqueEmail,
       passwordHash: await hashPassword("Password1234"),
       name: null
     }
@@ -43,12 +46,7 @@ describe("activities", () => {
       return;
     }
 
-    await prisma.tripDayActivity.deleteMany();
-    await prisma.activity.deleteMany();
-    await prisma.place.deleteMany();
-    await prisma.groupMember.deleteMany();
-    await prisma.group.deleteMany();
-    await prisma.user.deleteMany();
+    await resetTestDb();
   });
 
   afterAll(async () => {
@@ -79,7 +77,9 @@ describe("activities", () => {
         title: "Morning tour",
         placeId: place.id,
         startTime: "2025-06-01T09:00:00.000Z",
-        endTime: "2025-06-01T11:00:00.000Z"
+        endTime: "2025-06-01T11:00:00.000Z",
+        startTimeZone: "UTC",
+        endTimeZone: "UTC"
       });
 
     expect(createResponse.status).toBe(201);

@@ -7,7 +7,7 @@ Accepted
 We need a reliable testing approach for API and web as the app grows.
 
 ## Decision
-- API: Vitest + Supertest integration tests against a real Postgres database.
+- API: Vitest + Supertest integration tests against a real Postgres test database.
 - Web: Vitest + React Testing Library for component-level tests.
 
 ## Rationale
@@ -16,5 +16,5 @@ We need a reliable testing approach for API and web as the app grows.
 - Frontend tests stay lightweight and fast.
 
 ## Consequences
-- Requires `DATABASE_URL` and migrations before API tests.
-- May add a dedicated test database later for isolation.
+- Requires `DATABASE_URL_TEST` and migrations before API tests.
+- Test database resets skip seeding to avoid cross-test interference.

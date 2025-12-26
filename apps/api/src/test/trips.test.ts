@@ -1,14 +1,17 @@
+import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import app from "./testApp.js";
 import prisma from "../lib/db.js";
 import { hashPassword } from "../lib/auth.js";
-import { setupTestDb } from "./testDb.js";
+import { resetTestDb, setupTestDb } from "./testDb.js";
 
 async function createUser(email: string) {
+  const [local, domain] = email.split("@");
+  const uniqueEmail = `${local}+${randomUUID()}@${domain ?? "example.com"}`;
   return prisma.user.create({
     data: {
-      email,
+      email: uniqueEmail,
       passwordHash: await hashPassword("Password1234"),
       name: "Owner"
     }
@@ -43,10 +46,7 @@ describe("trips", () => {
       return;
     }
 
-    await prisma.groupMember.deleteMany();
-    await prisma.group.deleteMany();
-    await prisma.trip.deleteMany();
-    await prisma.user.deleteMany();
+    await resetTestDb();
   });
 
   afterAll(async () => {
@@ -67,7 +67,9 @@ describe("trips", () => {
         title: "Paris",
         description: "Spring break",
         startDate: "2025-04-01T00:00:00.000Z",
-        endDate: "2025-04-05T00:00:00.000Z"
+        endDate: "2025-04-05T00:00:00.000Z",
+        startDateTimeZone: "UTC",
+        endDateTimeZone: "UTC"
       });
 
     expect(createResponse.status).toBe(201);

@@ -20,3 +20,18 @@ export async function setupTestDb(label: string): Promise<TestDbState> {
     return { isReady: false };
   }
 }
+
+export async function resetTestDb(): Promise<void> {
+  await prisma.tripDayActivity.deleteMany();
+  await prisma.tripDayCity.deleteMany();
+  await prisma.tripDayPlace.deleteMany();
+  await prisma.activity.deleteMany();
+  await prisma.place.deleteMany();
+  await prisma.city.deleteMany();
+  await prisma.tripDay.deleteMany();
+  await prisma.itinerary.deleteMany();
+  await prisma.trip.deleteMany();
+  await prisma.groupMember.deleteMany();
+  await prisma.group.deleteMany();
+  await prisma.user.deleteMany();
+}
