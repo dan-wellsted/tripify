@@ -46,16 +46,32 @@ export default function RegisterPage() {
   };
 
   return (
-    <Box maxW="420px" mx="auto" mt={12} p={8} bg="white" rounded="lg" shadow="md">
+    <Box
+      maxW="460px"
+      mx="auto"
+      mt={12}
+      p={{ base: 6, md: 8 }}
+      bg="white"
+      rounded="2xl"
+      shadow="sm"
+      border="1px solid"
+      borderColor="orange.100"
+    >
       <Stack spacing={4} as="form" onSubmit={handleSubmit}>
-        <Heading size="lg">Create your account</Heading>
-        <Text color="gray.600">Get started with your first trip plan.</Text>
+        <Stack spacing={1}>
+          <Text fontSize="sm" color="orange.500" fontWeight="semibold">
+            Get started
+          </Text>
+          <Heading size="lg">Create your Wandr account</Heading>
+          <Text color="gray.600">Plan your first trip in minutes.</Text>
+        </Stack>
         {error ? <Text color="red.500">{error}</Text> : null}
         <FormControl>
           <FormLabel>Name</FormLabel>
           <Input
             value={name}
             onChange={(event) => setName(event.target.value)}
+            borderRadius="full"
           />
         </FormControl>
         <FormControl isRequired>
@@ -64,6 +80,7 @@ export default function RegisterPage() {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            borderRadius="full"
           />
         </FormControl>
         <FormControl isRequired>
@@ -72,14 +89,15 @@ export default function RegisterPage() {
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+            borderRadius="full"
           />
         </FormControl>
-        <Button type="submit" colorScheme="blue" isLoading={isSubmitting}>
+        <Button type="submit" variant="gradient" isLoading={isSubmitting}>
           Sign up
         </Button>
         <Text fontSize="sm" color="gray.600">
           Already have an account?{" "}
-          <Button variant="link" colorScheme="blue" as={RouterLink} to="/login">
+          <Button variant="link" colorScheme="orange" as={RouterLink} to="/login">
             Log in
           </Button>
         </Text>
